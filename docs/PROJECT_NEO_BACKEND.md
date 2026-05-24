@@ -22,7 +22,7 @@ The core schema includes:
 - Music planning: `song_requests`
 - Public content: `gallery_items`, `mixes`
 
-RLS is enabled on every table. Anonymous users can submit inquiries/messages and read only published or active public catalog/media records. Admin routes require an active `owner`, `admin`, or `staff` role. Client and financial data stays private unless an authenticated portal user owns that record.
+RLS is enabled on every table. Anonymous users can submit inquiries/messages and read only published or active public catalog/media records. Admin routes require an active `owner` or `admin` role. Client and financial data stays private unless an authenticated portal user owns that record.
 
 Credit card numbers, PAN values, CVV/CVC values, and card expiration values are intentionally not part of the schema and are rejected by the API if submitted.
 
@@ -210,7 +210,7 @@ Admin routes require:
 Authorization: Bearer SUPABASE_AUTH_ACCESS_TOKEN
 ```
 
-The token must belong to a Supabase Auth user with an active `public.users` row whose role is `owner`, `admin`, or `staff`.
+The token must belong to a Supabase Auth user with an active `public.users` row whose role is `owner` or `admin`.
 
 ### `GET /admin/me`
 

@@ -1229,6 +1229,73 @@ ul {
   width: 100%;
 }
 
+.auth-divider {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  margin: 1.1rem 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  height: 1px;
+  background: rgba(8, 16, 24, 0.12);
+}
+
+.auth-action-grid,
+.auth-link-row,
+.auth-settings-stack,
+.passkey-list,
+.passkey-register-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.auth-action-grid {
+  grid-template-columns: 1fr;
+}
+
+.auth-provider-button,
+.admin-auth-panel .btn-secondary,
+.passkey-list .btn-secondary {
+  width: 100%;
+  background: #ffffff;
+  color: var(--ink);
+  border-color: rgba(8, 16, 24, 0.16);
+  box-shadow: 0 10px 26px rgba(8, 16, 24, 0.08);
+  backdrop-filter: none;
+}
+
+.auth-provider-button:hover,
+.auth-provider-button:focus,
+.admin-auth-panel .btn-secondary:hover,
+.admin-auth-panel .btn-secondary:focus,
+.passkey-list .btn-secondary:hover,
+.passkey-list .btn-secondary:focus {
+  background: rgba(11, 124, 255, 0.08);
+  color: var(--ink);
+  border-color: rgba(11, 124, 255, 0.28);
+}
+
+.auth-support-note {
+  min-height: 1.2rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.auth-link-row {
+  margin-top: 1rem;
+}
+
 .admin-status {
   min-height: 1.35rem;
   margin: 0.75rem 0 0;
@@ -1242,6 +1309,16 @@ ul {
 
 .admin-status.error {
   color: #b42336;
+}
+
+.admin-status.success {
+  color: #087443;
+}
+
+.admin-auth-panel button[aria-busy="true"],
+.admin-panel button[aria-busy="true"] {
+  opacity: 0.72;
+  cursor: wait;
 }
 
 .admin-main {
@@ -1595,6 +1672,32 @@ ul {
   place-items: center;
   padding: 1rem;
   text-align: center;
+}
+
+.passkey-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.passkey-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(8, 16, 24, 0.1);
+  border-radius: var(--radius);
+  background: rgba(247, 249, 252, 0.92);
+}
+
+.passkey-list input {
+  width: 100%;
+}
+
+.passkey-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
 }
 
 .admin-detail {

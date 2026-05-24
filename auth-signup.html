@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex,nofollow">
-  <title>Project Neo Admin | DJ Too Kold</title>
+  <title>Create Account | Project Neo | DJ Too Kold</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="admin-body" data-admin-page="login">
+<body class="admin-body" data-auth-page="signup">
   <header class="admin-header">
     <a class="brand" href="index.html" aria-label="DJ Too Kold home">
       <span class="brand-mark" aria-hidden="true">TK</span>
@@ -17,21 +17,25 @@
   </header>
 
   <main class="admin-auth-main">
-    <section class="admin-auth-panel" aria-labelledby="admin-login-title">
-      <p class="eyebrow">Admin access</p>
-      <h1 id="admin-login-title">Project Neo Admin</h1>
+    <section class="admin-auth-panel" aria-labelledby="auth-signup-title">
+      <p class="eyebrow">Account access</p>
+      <h1 id="auth-signup-title">Create Account</h1>
 
-      <form class="admin-login-form" data-admin-login-form novalidate>
+      <form class="admin-login-form" data-auth-signup-form novalidate>
         <div class="form-group">
-          <label for="admin-email">Email</label>
-          <input id="admin-email" name="email" type="email" autocomplete="email" required>
+          <label for="signup-name">Full name</label>
+          <input id="signup-name" name="fullName" type="text" autocomplete="name">
         </div>
         <div class="form-group">
-          <label for="admin-password">Password</label>
-          <input id="admin-password" name="password" type="password" autocomplete="current-password" required>
+          <label for="signup-email">Email</label>
+          <input id="signup-email" name="email" type="email" autocomplete="email" required>
         </div>
-        <button class="btn-primary" type="submit">Sign In</button>
-        <p class="admin-status" data-admin-status aria-live="polite"></p>
+        <div class="form-group">
+          <label for="signup-password">Password</label>
+          <input id="signup-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+        </div>
+        <button class="btn-primary" type="submit">Create Account</button>
+        <p class="admin-status" data-auth-status aria-live="polite"></p>
       </form>
 
       <div class="auth-divider" aria-hidden="true"><span>or</span></div>
@@ -39,13 +43,10 @@
       <div class="auth-action-grid">
         <button class="btn-secondary auth-provider-button" type="button" data-oauth-provider="google">Continue with Google</button>
         <button class="btn-secondary auth-provider-button" type="button" data-oauth-provider="apple">Continue with Apple ID</button>
-        <button class="btn-secondary auth-provider-button" type="button" data-passkey-signin>Sign In with a Passkey</button>
       </div>
 
-      <p class="auth-support-note" data-passkey-message></p>
-
       <nav class="auth-link-row" aria-label="Account access links">
-        <a href="auth-signup.html">Create Account</a>
+        <a href="admin-login.html">Sign In</a>
         <a href="auth-forgot-password.html">Forgot Password</a>
       </nav>
     </section>
@@ -54,7 +55,6 @@
   <script src="project-neo-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="auth-client.js" defer></script>
-  <script src="passkeys.js" defer></script>
-  <script src="admin.js" defer></script>
+  <script src="auth-pages.js" defer></script>
 </body>
 </html>

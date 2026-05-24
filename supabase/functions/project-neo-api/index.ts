@@ -70,7 +70,7 @@ const PAYMENT_STATUSES = new Set(["pending", "paid", "failed", "refunded"]);
 const TASK_STATUSES = new Set(["todo", "in_progress", "waiting", "done", "cancelled"]);
 const PAYMENT_TYPES = new Set(["deposit", "balance", "refund", "other"]);
 const CLIENT_OPEN_EVENT_STATUSES = new Set(["pending", "confirmed", "hold", "tentative"]);
-const ADMIN_ROLES = new Set(["owner", "admin", "staff"]);
+const ADMIN_ROLES = new Set(["owner", "admin"]);
 
 const CARD_DATA_KEYS = new Set([
   "cardNumber",

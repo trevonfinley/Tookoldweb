@@ -104,7 +104,7 @@ Public routes:
 - `GET /service-packages`
 - `GET /availability`
 
-Admin routes require a Supabase Auth bearer token for an active `owner`, `admin`, or `staff` user:
+Admin routes require a Supabase Auth bearer token for an active `owner` or `admin` user:
 
 - `GET /admin/me`
 - `GET /admin/dashboard-summary`
@@ -172,6 +172,7 @@ npm run dev
 ```
 
 The local static server uses `http://localhost:4173`. Production-style deploy output lives in `dist/`.
+Supabase Auth redirects, Google OAuth, Apple OAuth, and passkey setup are documented in `docs/PROJECT_NEO_AUTH.md` and `docs/PROJECT_NEO_DEPLOYMENT.md`.
 
 If `npm` is not available on the shell PATH, the existing validator can still be run with a Node binary:
 
@@ -249,8 +250,8 @@ Phase 6: Operations scale
 
 - `docs/PROJECT_NEO_BACKEND.md`: API routes, payloads, response patterns, and backend behavior.
 - `docs/PROJECT_NEO_DATABASE_SCHEMA.md`: schema, statuses, relationships, RLS model, indexes, and seed data.
-- `docs/PROJECT_NEO_AUTH.md`: admin/client auth flow, roles, owner bootstrap, and access assumptions.
-- `docs/PROJECT_NEO_DEPLOYMENT.md`: local setup, environment model, Supabase deployment, Vercel/Netlify setup, launch checklist.
+- `docs/PROJECT_NEO_AUTH.md`: admin/client auth flow, roles, owner bootstrap, redirect URLs, OAuth setup, passkeys, and access assumptions.
+- `docs/PROJECT_NEO_DEPLOYMENT.md`: local setup, environment model, Supabase deployment, Vercel/Netlify setup, auth provider setup, launch checklist.
 - `docs/PROJECT_NEO_QA_BUG_REPORT.md`: current QA findings and fix checklist.
 
 ## Notes For The Next Engineer

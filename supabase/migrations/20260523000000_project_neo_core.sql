@@ -1158,33 +1158,15 @@ as $$
   );
 $$;
 
-create or replace function private.is_project_neo_staff()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1
-    from public.users
-    where id = (select auth.uid())
-      and role in ('owner', 'admin', 'staff')
-      and is_active = true
-  );
-$$;
-
 revoke all on function private.is_project_neo_admin() from public;
-revoke all on function private.is_project_neo_staff() from public;
 grant execute on function private.is_project_neo_admin() to authenticated;
-grant execute on function private.is_project_neo_staff() to authenticated;
 
-drop policy if exists "Project Neo staff can read users" on public.users;
-create policy "Project Neo staff can read users"
+drop policy if exists "Project Neo admins can read users" on public.users;
+create policy "Project Neo admins can read users"
 on public.users
 for select
 to authenticated
-using (id = (select auth.uid()) or private.is_project_neo_staff());
+using (id = (select auth.uid()) or private.is_project_neo_admin());
 
 drop policy if exists "Project Neo admins manage users" on public.users;
 create policy "Project Neo admins manage users"
@@ -1194,13 +1176,13 @@ to authenticated
 using (private.is_project_neo_admin())
 with check (private.is_project_neo_admin());
 
-drop policy if exists "Project Neo staff manage clients" on public.clients;
-create policy "Project Neo staff manage clients"
+drop policy if exists "Project Neo admins manage clients" on public.clients;
+create policy "Project Neo admins manage clients"
 on public.clients
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Portal clients can read their own client profile" on public.clients;
 create policy "Portal clients can read their own client profile"
@@ -1209,21 +1191,21 @@ for select
 to authenticated
 using (portal_user_id = (select auth.uid()));
 
-drop policy if exists "Project Neo staff manage venues" on public.venues;
-create policy "Project Neo staff manage venues"
+drop policy if exists "Project Neo admins manage venues" on public.venues;
+create policy "Project Neo admins manage venues"
 on public.venues
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
-drop policy if exists "Project Neo staff manage services" on public.services;
-create policy "Project Neo staff manage services"
+drop policy if exists "Project Neo admins manage services" on public.services;
+create policy "Project Neo admins manage services"
 on public.services
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Active services are public" on public.services;
 create policy "Active services are public"
@@ -1232,13 +1214,13 @@ for select
 to anon, authenticated
 using (is_active = true);
 
-drop policy if exists "Project Neo staff manage packages" on public.packages;
-create policy "Project Neo staff manage packages"
+drop policy if exists "Project Neo admins manage packages" on public.packages;
+create policy "Project Neo admins manage packages"
 on public.packages
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Active packages are public" on public.packages;
 create policy "Active packages are public"
@@ -1247,13 +1229,13 @@ for select
 to anon, authenticated
 using (is_active = true);
 
-drop policy if exists "Project Neo staff manage package services" on public.package_services;
-create policy "Project Neo staff manage package services"
+drop policy if exists "Project Neo admins manage package services" on public.package_services;
+create policy "Project Neo admins manage package services"
 on public.package_services
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Package services for active packages are public" on public.package_services;
 create policy "Package services for active packages are public"
@@ -1269,13 +1251,13 @@ using (
   )
 );
 
-drop policy if exists "Project Neo staff manage booking inquiries" on public.booking_inquiries;
-create policy "Project Neo staff manage booking inquiries"
+drop policy if exists "Project Neo admins manage booking inquiries" on public.booking_inquiries;
+create policy "Project Neo admins manage booking inquiries"
 on public.booking_inquiries
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Public users can submit booking inquiries" on public.booking_inquiries;
 create policy "Public users can submit booking inquiries"
@@ -1298,13 +1280,13 @@ with check (
   and cancelled_at is null
 );
 
-drop policy if exists "Project Neo staff manage contact messages" on public.contact_messages;
-create policy "Project Neo staff manage contact messages"
+drop policy if exists "Project Neo admins manage contact messages" on public.contact_messages;
+create policy "Project Neo admins manage contact messages"
 on public.contact_messages
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Public users can submit contact messages" on public.contact_messages;
 create policy "Public users can submit contact messages"
@@ -1313,13 +1295,13 @@ for insert
 to anon, authenticated
 with check (status = 'new' and internal_notes is null);
 
-drop policy if exists "Project Neo staff manage events" on public.events;
-create policy "Project Neo staff manage events"
+drop policy if exists "Project Neo admins manage events" on public.events;
+create policy "Project Neo admins manage events"
 on public.events
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Portal clients can read their own events" on public.events;
 create policy "Portal clients can read their own events"
@@ -1335,13 +1317,13 @@ using (
   )
 );
 
-drop policy if exists "Project Neo staff manage invoices" on public.invoices;
-create policy "Project Neo staff manage invoices"
+drop policy if exists "Project Neo admins manage invoices" on public.invoices;
+create policy "Project Neo admins manage invoices"
 on public.invoices
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Portal clients can read their own invoices" on public.invoices;
 create policy "Portal clients can read their own invoices"
@@ -1357,13 +1339,13 @@ using (
   )
 );
 
-drop policy if exists "Project Neo staff manage invoice items" on public.invoice_items;
-create policy "Project Neo staff manage invoice items"
+drop policy if exists "Project Neo admins manage invoice items" on public.invoice_items;
+create policy "Project Neo admins manage invoice items"
 on public.invoice_items
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Portal clients can read their own invoice items" on public.invoice_items;
 create policy "Portal clients can read their own invoice items"
@@ -1380,13 +1362,13 @@ using (
   )
 );
 
-drop policy if exists "Project Neo staff manage payments" on public.payments;
-create policy "Project Neo staff manage payments"
+drop policy if exists "Project Neo admins manage payments" on public.payments;
+create policy "Project Neo admins manage payments"
 on public.payments
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Portal clients can read their own payments" on public.payments;
 create policy "Portal clients can read their own payments"
@@ -1403,13 +1385,13 @@ using (
   )
 );
 
-drop policy if exists "Project Neo staff manage contracts" on public.contracts;
-create policy "Project Neo staff manage contracts"
+drop policy if exists "Project Neo admins manage contracts" on public.contracts;
+create policy "Project Neo admins manage contracts"
 on public.contracts
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Portal clients can read their own contracts" on public.contracts;
 create policy "Portal clients can read their own contracts"
@@ -1425,13 +1407,13 @@ using (
   )
 );
 
-drop policy if exists "Project Neo staff manage song requests" on public.song_requests;
-create policy "Project Neo staff manage song requests"
+drop policy if exists "Project Neo admins manage song requests" on public.song_requests;
+create policy "Project Neo admins manage song requests"
 on public.song_requests
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Portal clients can read song requests for their events" on public.song_requests;
 create policy "Portal clients can read song requests for their events"
@@ -1489,13 +1471,13 @@ with check (
   )
 );
 
-drop policy if exists "Project Neo staff manage gallery items" on public.gallery_items;
-create policy "Project Neo staff manage gallery items"
+drop policy if exists "Project Neo admins manage gallery items" on public.gallery_items;
+create policy "Project Neo admins manage gallery items"
 on public.gallery_items
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Published gallery items are public" on public.gallery_items;
 create policy "Published gallery items are public"
@@ -1504,13 +1486,13 @@ for select
 to anon, authenticated
 using (is_published = true);
 
-drop policy if exists "Project Neo staff manage mixes" on public.mixes;
-create policy "Project Neo staff manage mixes"
+drop policy if exists "Project Neo admins manage mixes" on public.mixes;
+create policy "Project Neo admins manage mixes"
 on public.mixes
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Published mixes are public" on public.mixes;
 create policy "Published mixes are public"
@@ -1519,13 +1501,13 @@ for select
 to anon, authenticated
 using (is_published = true);
 
-drop policy if exists "Project Neo staff manage event notes" on public.event_notes;
-create policy "Project Neo staff manage event notes"
+drop policy if exists "Project Neo admins manage event notes" on public.event_notes;
+create policy "Project Neo admins manage event notes"
 on public.event_notes
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
 drop policy if exists "Portal clients can read public event notes" on public.event_notes;
 create policy "Portal clients can read public event notes"
@@ -1543,14 +1525,34 @@ using (
   )
 );
 
-drop policy if exists "Project Neo staff manage tasks" on public.tasks;
-create policy "Project Neo staff manage tasks"
+drop policy if exists "Project Neo admins manage tasks" on public.tasks;
+create policy "Project Neo admins manage tasks"
 on public.tasks
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());
 
+drop policy if exists "Project Neo staff can read users" on public.users;
+drop policy if exists "Project Neo staff manage clients" on public.clients;
+drop policy if exists "Project Neo staff manage venues" on public.venues;
+drop policy if exists "Project Neo staff manage services" on public.services;
+drop policy if exists "Project Neo staff manage packages" on public.packages;
+drop policy if exists "Project Neo staff manage package services" on public.package_services;
+drop policy if exists "Project Neo staff manage booking inquiries" on public.booking_inquiries;
+drop policy if exists "Project Neo staff manage contact messages" on public.contact_messages;
+drop policy if exists "Project Neo staff manage events" on public.events;
+drop policy if exists "Project Neo staff manage invoices" on public.invoices;
+drop policy if exists "Project Neo staff manage invoice items" on public.invoice_items;
+drop policy if exists "Project Neo staff manage payments" on public.payments;
+drop policy if exists "Project Neo staff manage contracts" on public.contracts;
+drop policy if exists "Project Neo staff manage song requests" on public.song_requests;
+drop policy if exists "Project Neo staff manage gallery items" on public.gallery_items;
+drop policy if exists "Project Neo staff manage mixes" on public.mixes;
+drop policy if exists "Project Neo staff manage event notes" on public.event_notes;
+drop policy if exists "Project Neo staff manage tasks" on public.tasks;
+
+drop function if exists private.is_project_neo_staff();
 drop function if exists public.is_project_neo_admin();
 drop function if exists public.is_project_neo_staff();
 

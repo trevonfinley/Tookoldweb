@@ -2,7 +2,9 @@
   const page = document.body.dataset.adminPage;
   if (!page) return;
 
-  const config = window.ProjectNeoConfig || {};
+  const auth = window.ProjectNeoAuth;
+  const passkeys = window.ProjectNeoPasskeys;
+  const config = auth?.config || window.ProjectNeoConfig || {};
   const apiBaseUrl = normalizeBaseUrl(config.apiBaseUrl);
   const supabaseUrl = normalizeBaseUrl(config.supabaseUrl);
   const supabaseKey = config.supabasePublishableKey || config.supabaseAnonKey || "";
@@ -352,27 +354,35 @@
   }
 
   function requireConfig() {
-    if (!apiBaseUrl || !supabaseUrl || !supabaseKey || !window.supabase?.createClient) {
-      setStatus("Project Neo admin configuration is missing.", "error");
+    const authStatus = auth?.validateConfig?.();
+    if (!apiBaseUrl || !authStatus?.ok) {
+      setStatus(authStatus?.message || "Project Neo admin configuration is missing.", "error");
       return false;
     }
     return true;
   }
 
   function getSupabaseClient() {
+    if (auth?.getClient) return auth.getClient();
     if (!supabaseClient) {
-      supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+      supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          experimental: { passkey: true },
+        },
+      });
     }
     return supabaseClient;
   }
 
   async function getSession() {
+    if (auth?.getSession) return auth.getSession();
     const { data, error } = await getSupabaseClient().auth.getSession();
     if (error) throw error;
     return data.session;
   }
 
   async function adminFetch(path, session) {
+    if (auth?.apiFetch) return auth.apiFetch(path, session);
     const response = await fetch(`${apiBaseUrl}${path}`, {
       headers: {
         "Accept": "application/json",
@@ -391,6 +401,7 @@
   }
 
   function getSafeReturnPath() {
+    if (auth?.getReturnPath) return auth.getReturnPath("admin-dashboard.html");
     const fallback = "admin-dashboard.html";
     const rawPath = new URLSearchParams(window.location.search).get("returnTo") || fallback;
 
@@ -404,12 +415,20 @@
   }
 
   function getLoginUrl() {
+    if (auth?.getLoginUrl) {
+      const currentPage = `${window.location.pathname.split("/").pop() || "admin-dashboard.html"}${window.location.search}`;
+      return auth.getLoginUrl(currentPage);
+    }
     const currentPage = `${window.location.pathname.split("/").pop() || "admin-dashboard.html"}${window.location.search}`;
     return `admin-login.html?returnTo=${encodeURIComponent(currentPage)}`;
   }
 
   async function signOutAndRedirect() {
-    await getSupabaseClient().auth.signOut();
+    if (auth?.signOut) {
+      await auth.signOut();
+    } else {
+      await getSupabaseClient().auth.signOut();
+    }
     window.location.replace(getLoginUrl());
   }
 
@@ -424,6 +443,7 @@
 
     const form = document.querySelector("[data-admin-login-form]");
     const submitButton = form?.querySelector("button[type='submit']");
+    setupLoginActions();
 
     try {
       const existingSession = await getSession();
@@ -449,7 +469,9 @@
       try {
         setButtonBusy(submitButton, true);
         setStatus("Signing in...");
-        const { data, error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
+        const { data, error } = auth?.signInWithPassword
+          ? await auth.signInWithPassword(email, password)
+          : await getSupabaseClient().auth.signInWithPassword({ email, password });
         if (error) throw error;
 
         const session = data.session || await getSession();
@@ -459,9 +481,48 @@
         window.location.assign(getSafeReturnPath());
       } catch (error) {
         await getSupabaseClient().auth.signOut();
-        setStatus(error.status === 403 ? "This account does not have Project Neo admin access." : "Sign in failed.", "error");
+        setStatus(error.status === 403 ? "This account does not have Project Neo admin access." : error.message || "Sign in failed.", "error");
       } finally {
         setButtonBusy(submitButton, false);
+      }
+    });
+  }
+
+  function setupLoginActions() {
+    renderPasskeyAvailability("[data-passkey-message]");
+
+    document.querySelectorAll("[data-oauth-provider]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const provider = button.dataset.oauthProvider;
+        try {
+          setButtonBusy(button, true);
+          setStatus(`Opening ${formatStatus(provider)}...`);
+          const { error } = await auth.signInWithOAuth(provider, getSafeReturnPath());
+          if (error) throw error;
+        } catch (error) {
+          setStatus(error.message || `Could not start ${formatStatus(provider)} sign-in.`, "error");
+          setButtonBusy(button, false);
+        }
+      });
+    });
+
+    const passkeyButton = document.querySelector("[data-passkey-signin]");
+    passkeyButton?.addEventListener("click", async () => {
+      try {
+        if (!passkeys) throw new Error("Passkey support is not loaded.");
+        setButtonBusy(passkeyButton, true);
+        setStatus("Checking passkey...");
+        const { error } = await passkeys.signIn();
+        if (error) throw error;
+
+        const session = await getSession();
+        if (!session) throw new Error("Could not start a passkey session.");
+        await adminFetch("/admin/me", session);
+        window.location.assign(getSafeReturnPath());
+      } catch (error) {
+        setStatus(error.message || "Passkey sign-in failed.", "error");
+      } finally {
+        setButtonBusy(passkeyButton, false);
       }
     });
   }
@@ -471,6 +532,7 @@
 
     setupNavigation();
     setupRecordControls();
+    setupPasskeyManagement();
 
     const signOutButton = document.querySelector("[data-admin-signout]");
     const refreshButton = document.querySelector("[data-admin-refresh]");
@@ -497,6 +559,7 @@
       const profile = await adminFetch("/admin/me", session);
       state.profile = profile;
       renderProfile(profile);
+      await loadPasskeys();
 
       await loadAdminData(session);
       renderDashboard();
@@ -546,14 +609,164 @@
 
   function renderProfile(profile) {
     setText("[data-admin-email]", profile.email || "Project Neo user");
-    setText("[data-admin-role]", profile.role || "staff");
+    setText("[data-admin-role]", profile.role || "admin");
     setText("[data-settings='email']", profile.email || "Project Neo user");
-    setText("[data-settings='role']", formatStatus(profile.role || "staff"));
+    setText("[data-settings='role']", formatStatus(profile.role || "admin"));
     setText("[data-settings='api']", apiBaseUrl ? "Configured" : "Missing");
     setText("[data-settings='supabase']", supabaseUrl ? "Configured" : "Missing");
 
     const account = document.querySelector("[data-admin-account]");
     if (account) account.hidden = false;
+  }
+
+  async function renderPasskeyAvailability(selector) {
+    const message = document.querySelector(selector);
+    if (!message) return;
+
+    if (!passkeys) {
+      message.textContent = "Passkey support is not loaded. Use email, Google, or Apple instead.";
+      return;
+    }
+
+    try {
+      const support = await passkeys.getSupportStatus();
+      if (!support.webAuthn) {
+        message.textContent = "Passkeys are not available on this browser or device. Use email, Google, or Apple instead.";
+      } else if (!support.api) {
+        message.textContent = "Passkey support is not enabled in the loaded Supabase SDK. Use another sign-in method.";
+      } else {
+        message.textContent = support.platformAuthenticator
+          ? "Passkeys are available on this device."
+          : "Passkeys are available when a compatible authenticator is connected.";
+      }
+    } catch {
+      message.textContent = "Passkey availability could not be checked. Use email, Google, or Apple instead.";
+    }
+  }
+
+  function setupPasskeyManagement() {
+    const form = document.querySelector("[data-passkey-register-form]");
+    const list = document.querySelector("[data-passkey-list]");
+    if (!form || !list) return;
+
+    renderPasskeyAvailability("[data-passkey-settings-message]");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = form.querySelector("button[type='submit']");
+      const friendlyName = form.friendlyName.value.trim();
+
+      try {
+        if (!passkeys) throw new Error("Passkey support is not loaded.");
+        setButtonBusy(button, true);
+        setStatus("Registering passkey...");
+        const { error } = await passkeys.register(friendlyName);
+        if (error) throw error;
+        form.reset();
+        await loadPasskeys();
+        setStatus("Passkey registered.", "success");
+      } catch (error) {
+        setStatus(error.message || "Could not register passkey.", "error");
+      } finally {
+        setButtonBusy(button, false);
+      }
+    });
+
+    list.addEventListener("click", async (event) => {
+      const button = event.target instanceof Element ? event.target.closest("[data-passkey-action]") : null;
+      if (!button) return;
+
+      const row = button.closest("[data-passkey-id]");
+      const id = row?.dataset.passkeyId;
+      if (!id) return;
+
+      try {
+        if (!passkeys) throw new Error("Passkey support is not loaded.");
+        setButtonBusy(button, true);
+        if (button.dataset.passkeyAction === "rename") {
+          const input = row.querySelector("input");
+          const friendlyName = input?.value.trim();
+          if (!friendlyName) throw new Error("Passkey name is required.");
+          const { error } = await passkeys.update(id, friendlyName);
+          if (error) throw error;
+          setStatus("Passkey renamed.", "success");
+        }
+
+        if (button.dataset.passkeyAction === "delete") {
+          const { error } = await passkeys.remove(id);
+          if (error) throw error;
+          setStatus("Passkey removed.", "success");
+        }
+
+        await loadPasskeys();
+      } catch (error) {
+        setStatus(error.message || "Could not update passkey.", "error");
+      } finally {
+        setButtonBusy(button, false);
+      }
+    });
+  }
+
+  async function loadPasskeys() {
+    const list = document.querySelector("[data-passkey-list]");
+    if (!list || !passkeys) return;
+
+    try {
+      const { data, error } = await passkeys.list();
+      if (error) throw error;
+      renderPasskeyList(passkeys.normalizeList(data));
+    } catch (error) {
+      list.textContent = "";
+      list.append(createEmptyListItem(error.message || "Passkeys could not be loaded."));
+    }
+  }
+
+  function renderPasskeyList(items) {
+    const list = document.querySelector("[data-passkey-list]");
+    if (!list) return;
+    list.textContent = "";
+
+    if (items.length === 0) {
+      list.append(createEmptyListItem("No passkeys registered yet."));
+      return;
+    }
+
+    items.forEach((item) => {
+      const id = passkeys.getPasskeyId(item);
+      const li = document.createElement("li");
+      li.dataset.passkeyId = id;
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = passkeys.getPasskeyName(item);
+      input.setAttribute("aria-label", "Passkey name");
+
+      const actions = document.createElement("div");
+      actions.className = "passkey-actions";
+
+      const renameButton = document.createElement("button");
+      renameButton.type = "button";
+      renameButton.className = "btn-secondary";
+      renameButton.dataset.passkeyAction = "rename";
+      renameButton.textContent = "Save";
+
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "btn-secondary";
+      deleteButton.dataset.passkeyAction = "delete";
+      deleteButton.textContent = "Remove";
+
+      actions.append(renameButton, deleteButton);
+      li.append(input, actions);
+      list.append(li);
+    });
+  }
+
+  function createEmptyListItem(message) {
+    const item = document.createElement("li");
+    item.className = "admin-empty";
+    item.textContent = message;
+    return item;
   }
 
   function renderMetrics(summary) {

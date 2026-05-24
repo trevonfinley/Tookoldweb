@@ -34,6 +34,29 @@ These values are safe to use in browser code when Row Level Security and API aut
 | `PROJECT_NEO_ADMIN_EMAIL` | Optional | `admin@example.com` | Public support/admin contact if UI needs it. |
 | `PROJECT_NEO_REQUIRE_PUBLIC_CONFIG` | Optional | `true` | Makes non-production builds fail when public config is missing. |
 
+### Supabase Auth Provider Configuration
+
+Supabase Auth has two configuration surfaces for Project Neo:
+
+- Static site environment variables expose only the Supabase project URL and browser publishable key.
+- Provider secrets and Auth URL settings live in Supabase Auth provider settings for hosted staging/production, or in `supabase/config.toml` plus local `.env` values for local Supabase CLI development.
+
+| Name or setting | Where it belongs | Required | Notes |
+| --- | --- | --- | --- |
+| Supabase Auth Site URL | Supabase Dashboard, Auth URL Configuration | Yes | Production should be `PROJECT_NEO_APP_URL`, such as `https://djtoo-kold.com`. |
+| Supabase Auth Redirect URLs | Supabase Dashboard, Auth URL Configuration | Yes | Must include callback and reset URLs for every local, staging, preview, and production auth domain. |
+| `SUPABASE_URL` | Static host and Edge Function secrets | Yes | Public project URL. Browser-safe. |
+| `SUPABASE_PUBLISHABLE_KEY` | Static host only | Yes | Browser-safe public key. Use publishable key when available; legacy anon key is compatibility only. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Edge Function secrets only | Yes for current API | Server-side only. Bypasses RLS. Never expose through Vercel/Netlify static env or `project-neo-config.js`. |
+| `SUPABASE_SECRET_KEY` | Future private server runtime only | No | Server-side only. Use only if Project Neo later adopts newer Supabase secret keys in private server code. |
+| Google OAuth Client ID | Supabase Auth provider settings | Yes for Google | Configure with matching secret and redirect URIs. |
+| Google OAuth Client Secret | Supabase Auth provider settings or local `.env` for CLI | Yes for Google | Server/provider secret. Never ship to the browser. |
+| Apple Services ID / Client ID | Supabase Auth provider settings | Yes for Apple web OAuth | Usually a Services ID like `com.example.app.web`. |
+| Apple Team ID and Key ID | Supabase Auth provider settings | Yes for Apple | Provider configuration values. Treat as private operational config. |
+| Apple private `.p8` key or generated client secret | Supabase Auth provider settings or local `.env` for CLI | Yes for Apple | Server/provider secret. Store securely and rotate on schedule. |
+| `SUPABASE_ACCESS_TOKEN` | Local/CI secret store only | Only for automation | Needed only if automating Supabase Management API provider config. |
+| Passkey/WebAuthn config | Supabase project and browser SDK | Conditional | No static secret. Requires supported Supabase SDK surface, HTTPS or localhost, and supported browser/device. |
+
 ### Supabase Edge Function Secrets
 
 Set these in Supabase, not in frontend code. For local serving, copy `supabase/functions/.env.example` to `supabase/functions/.env`.
@@ -73,7 +96,43 @@ cp supabase/functions/.env.example supabase/functions/.env
 
 Fill `.env.local` with public local or staging values. Fill `supabase/functions/.env` with server-only function secrets.
 
-3. Start Supabase locally or point `.env.local` at a staging Supabase project.
+3. Configure local Supabase Auth redirects if using the local Supabase stack.
+
+In `supabase/config.toml`, local auth should use the Project Neo static server as the site URL and allow the callback/reset pages:
+
+```toml
+[auth]
+site_url = "http://localhost:4173"
+additional_redirect_urls = [
+  "http://localhost:4173/auth-callback.html",
+  "http://localhost:4173/auth-reset-password.html"
+]
+```
+
+If Google OAuth is tested against local Supabase, add the provider config and keep the secret in local `.env`:
+
+```toml
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET)"
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
+skip_nonce_check = false
+```
+
+If Apple OAuth is tested locally, configure Apple the same way and keep the generated Apple client secret outside git:
+
+```toml
+[auth.external.apple]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
+redirect_uri = "env(SUPABASE_AUTH_EXTERNAL_APPLE_REDIRECT_URI)"
+```
+
+After changing `supabase/config.toml`, restart Supabase with `supabase stop` and `supabase start`.
+
+4. Start Supabase locally or point `.env.local` at a staging Supabase project.
 
 ```bash
 supabase start
@@ -81,7 +140,7 @@ supabase db reset
 supabase functions serve project-neo-api --env-file supabase/functions/.env
 ```
 
-4. Build and preview the static site:
+5. Build and preview the static site:
 
 ```bash
 npm run build
@@ -90,13 +149,15 @@ npm run preview
 
 Open `http://localhost:4173`. The deployable files live in `dist/`.
 
-5. For quick static-only edits, run:
+6. For quick static-only edits, run:
 
 ```bash
 npm run dev
 ```
 
 This serves the repository root. It is useful for design/content work, but production deploys should always use `npm run build` and the generated `dist/` output.
+
+Do not use `file://` URLs for Auth QA. OAuth redirects and passkeys should be tested through `http://localhost:4173` locally or HTTPS in staging/production.
 
 ## Build Scripts
 
@@ -159,6 +220,97 @@ values ('AUTH_USER_ID_HERE', 'owner', 'DJ Too Kold', 'admin@example.com');
 
 6. Before launch, run Supabase advisors from the dashboard or CLI and confirm all exposed public tables have explicit grants, RLS enabled, and matching policies.
 
+## Supabase Auth Setup
+
+Project Neo auth uses Supabase email/password, Google OAuth, Apple OAuth, and optional passkeys. Configure these before production launch.
+
+### Redirect URL Checklist
+
+Supabase Auth URL Configuration:
+
+- [ ] Site URL is the production app URL, for example `https://djtoo-kold.com`.
+- [ ] Local callback is allowed: `http://localhost:4173/auth-callback.html`.
+- [ ] Local password reset is allowed: `http://localhost:4173/auth-reset-password.html`.
+- [ ] Local wildcard is allowed for development only: `http://localhost:4173/**`.
+- [ ] Staging callback is allowed: `https://STAGING_DOMAIN/auth-callback.html`.
+- [ ] Staging password reset is allowed: `https://STAGING_DOMAIN/auth-reset-password.html`.
+- [ ] Production callback is allowed exactly: `https://PRODUCTION_DOMAIN/auth-callback.html`.
+- [ ] Production password reset is allowed exactly: `https://PRODUCTION_DOMAIN/auth-reset-password.html`.
+- [ ] Vercel preview wildcard is allowed only for preview testing: `https://*-TEAM_OR_ACCOUNT.vercel.app/**`.
+- [ ] Netlify preview wildcard is allowed only if Netlify is the host: `https://**--SITE_NAME.netlify.app/**`.
+- [ ] Production does not rely on broad wildcard redirects.
+- [ ] Email templates that use `redirectTo` use `{{ .RedirectTo }}` where appropriate.
+
+OAuth provider callback URLs:
+
+- [ ] Google local Authorized redirect URI: `http://127.0.0.1:54321/auth/v1/callback`.
+- [ ] Google staging Authorized redirect URI: `https://STAGING_PROJECT_REF.supabase.co/auth/v1/callback`.
+- [ ] Google production Authorized redirect URI: `https://PRODUCTION_PROJECT_REF.supabase.co/auth/v1/callback`.
+- [ ] Apple Services ID return URL uses the Supabase callback URL for the active Supabase project.
+- [ ] If Supabase custom auth domains are added later, OAuth provider callback URLs are updated to match.
+
+### Google OAuth Checklist
+
+- [ ] Google Cloud project exists for DJ Too Kold / Project Neo.
+- [ ] OAuth consent screen is configured with production app name, support email, app domain, privacy policy, and terms URLs.
+- [ ] OAuth client type is `Web application`.
+- [ ] Authorized JavaScript origins include local, staging, preview as needed, and production origins.
+- [ ] Authorized redirect URIs include each Supabase project's `/auth/v1/callback` URL.
+- [ ] Client ID and Client Secret are copied into the matching Supabase Auth Google provider.
+- [ ] Local CLI testing uses `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET` from an ignored `.env`.
+- [ ] OAuth scopes are minimal. Request calendar/email provider scopes only when a server-side integration truly needs them.
+- [ ] Provider tokens are not stored in frontend code or localStorage outside the Supabase session flow.
+
+### Apple OAuth Checklist
+
+- [ ] Apple Developer account is active.
+- [ ] App ID is created and Sign in with Apple capability is enabled.
+- [ ] Services ID is created for web OAuth and configured in Supabase as the Apple client ID.
+- [ ] Apple Website URLs use the Supabase project domain, and return URLs use that project callback URL.
+- [ ] Team ID, Key ID, Services ID, and generated client secret are configured in the Supabase Apple provider.
+- [ ] The `.p8` private key is stored securely outside the repo.
+- [ ] Calendar reminder exists to rotate/regenerate the Apple OAuth client secret at least every 6 months.
+- [ ] Apple private relay email sources are configured if Project Neo sends email to hidden Apple relay addresses.
+- [ ] The app does not require Apple full name on later logins; Apple may only provide name data during first authorization, and Supabase OAuth flow may not provide it to the app.
+
+### Passkey/WebAuthn Checklist
+
+- [ ] Passkeys are treated as an enhancement, not the only launch login method.
+- [ ] Email/password, Google, or Apple remains available for account recovery and unsupported devices.
+- [ ] Supabase JS is loaded with `auth.experimental.passkey = true`.
+- [ ] Passkey UI checks `window.PublicKeyCredential`, `navigator.credentials`, and the Supabase `auth.passkey` API before showing required passkey flows.
+- [ ] Passkeys are tested on HTTPS staging/production and on `localhost` for local development.
+- [ ] Production domain is stable before encouraging passkey registration; passkeys are scoped to the relying-party domain/origin.
+- [ ] Multiple passkeys per owner/admin are supported or at least planned so one lost device does not lock out the account.
+- [ ] The UI clearly falls back when platform authenticators, roaming security keys, or cross-device passkeys are not available.
+- [ ] Passkey management lets authenticated admins view, rename, and remove registered passkeys.
+- [ ] Shield reviews recovery, session revocation, and last-admin lockout procedures before passkeys become a launch requirement.
+
+Browser/device support assumptions:
+
+- Most modern browsers support WebAuthn, but passkey behavior varies by browser, OS, device, authenticator, credential manager, and enterprise policy.
+- Platform authenticators include Touch ID, Face ID, Windows Hello, Android screen lock, or equivalent device unlock methods.
+- Roaming authenticators include hardware security keys and cross-device phone flows.
+- `localhost` is acceptable for local testing, but production must use HTTPS.
+- Passkeys registered on `localhost` do not prove production-domain passkeys work.
+
+### Auth Production Setup
+
+- [ ] Production Supabase project has Email provider enabled.
+- [ ] Production Supabase Site URL is `PROJECT_NEO_APP_URL`.
+- [ ] Production redirect URLs include only exact production callback/reset paths plus approved staging/preview patterns.
+- [ ] Google and Apple providers are enabled only after their provider-side callback URLs are verified.
+- [ ] `PROJECT_NEO_APP_URL`, `PROJECT_NEO_API_BASE_URL`, `SUPABASE_URL`, and `SUPABASE_PUBLISHABLE_KEY` are set in the static host production environment.
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` remains only in Supabase Edge Function secrets.
+- [ ] Owner account is created, receives a `public.users` row, and has MFA enabled where available.
+- [ ] Admin signup is reviewed by Gatekeeper; a newly signed-up user must not gain admin access until a trusted owner/admin assigns the role row.
+
+### Gatekeeper and Shield Notes
+
+Gatekeeper owns auth behavior and should verify that all browser flows use `auth-callback.html` and `auth-reset-password.html`, that `returnTo` stays same-origin, and that OAuth token exchange code accepts any successful 2xx response rather than hardcoding `201`.
+
+Shield owns security review and should verify the final redirect allowlist, JWT lifetime, MFA posture, session revocation process, RLS policies, role checks, and all server-only secrets before launch. Broad wildcard redirects are acceptable for local/preview QA only, not as the production security posture.
+
 ## Vercel Setup
 
 1. Import the GitHub repository into Vercel.
@@ -219,6 +371,10 @@ Preview deployments should prove a change without touching live customer data.
 - [ ] Booking form writes to Supabase and creates an admin-reviewable inquiry.
 - [ ] Contact form writes to Supabase or has an intentional fallback.
 - [ ] Admin login works for the owner account.
+- [ ] Google OAuth login works in staging and production.
+- [ ] Apple OAuth login works in staging and production, or is hidden until configured.
+- [ ] Password reset email returns to `auth-reset-password.html`.
+- [ ] Passkey registration/sign-in is tested on at least one supported desktop browser and one supported mobile platform, or passkey UI remains optional.
 - [ ] Client portal login behavior is verified with a test client.
 - [ ] Supabase Auth owner account has MFA enabled.
 - [ ] Production `PROJECT_NEO_ALLOWED_ORIGIN` is the live site origin, not `*`.
@@ -274,7 +430,16 @@ Preview deployments should prove a change without touching live customer data.
 ## Source Links
 
 - Supabase Edge Function environment variables and secrets: <https://supabase.com/docs/guides/functions/secrets>
+- Supabase Auth redirect URLs: <https://supabase.com/docs/guides/auth/redirect-urls>
+- Supabase Google OAuth setup: <https://supabase.com/docs/guides/auth/social-login/auth-google>
+- Supabase Apple OAuth setup: <https://supabase.com/docs/guides/auth/social-login/auth-apple>
+- Supabase JavaScript passkey API: <https://supabase.com/docs/reference/javascript/auth-passkey-api>
+- Supabase local config and secrets: <https://supabase.com/docs/guides/local-development/managing-config>
+- Supabase CLI auth config reference: <https://supabase.com/docs/guides/local-development/cli/config>
+- Supabase OAuth token endpoint breaking change: <https://supabase.com/changelog/45468-breaking-change-oauth-token-endpoint-will-return-http-200-instead-of-201>
 - Supabase 2026 Data API grant change: <https://supabase.com/changelog/45329-breaking-change-tables-not-exposed-to-data-and-graphql-api-automatically>
+- MDN passkeys overview: <https://developer.mozilla.org/en-US/docs/Web/Security/Authentication/Passkeys>
+- web.dev passkey registration support notes: <https://web.dev/articles/passkey-registration>
 - Vercel environment variables: <https://vercel.com/docs/environment-variables>
 - Vercel preview environments: <https://vercel.com/docs/deployments/environments#preview-environment-pre-production>
 - Netlify build environment variables: <https://docs.netlify.com/build/configure-builds/environment-variables/>

@@ -2,4 +2,8 @@ User-agent: *
 Allow: /
 Disallow: /admin-login.html
 Disallow: /admin-dashboard.html
+Disallow: /auth-callback.html
+Disallow: /auth-forgot-password.html
+Disallow: /auth-reset-password.html
+Disallow: /auth-signup.html
 Disallow: /client-portal.html

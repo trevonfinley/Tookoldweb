@@ -60,7 +60,7 @@ RLS is enabled on the MVP tables.
 
 - Anonymous users should only insert public booking inquiries and read active public catalog/media records.
 - Anonymous users must not select from `clients`, `booking_inquiries`, `events`, `invoices`, `invoice_items`, `payments`, `users`, or private `event_notes`.
-- Authenticated `owner`, `admin`, and `staff` users can manage MVP operational tables.
+- Authenticated `owner` and `admin` users can manage MVP operational tables. Staff and DJ access should wait for assigned-record policies.
 - `owner` and `admin` can manage `users`.
 - Public website reads are limited to active `services`, active `packages`, published `gallery_items`, and published `mixes`.
 - Portal/client access is future-ready through `clients.portal_user_id`; when enabled, clients should only read their own events, invoices, invoice items, payments, and non-private event notes.

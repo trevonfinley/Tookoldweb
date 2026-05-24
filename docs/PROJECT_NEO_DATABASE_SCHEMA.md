@@ -82,8 +82,9 @@ Row Level Security is enabled on every table.
 - `anon` receives only public catalog/media `select` privileges and inquiry/message `insert` privileges.
 - Public anonymous users can insert only new booking inquiries and contact messages. Public booking inserts must include the core admin-review fields: client name, event date, event type, city/state, and estimated guest count.
 - Public anonymous users can read only active services, active packages, package-service mappings for active packages, published gallery items, and published mixes.
-- Authenticated `owner`, `admin`, and `staff` users can manage operational data.
+- Authenticated `owner` and `admin` users can manage operational data.
 - `owner` and `admin` users can manage `users`.
+- `staff` is reserved for future assigned-task access and does not receive admin dashboard access by default.
 - `dj` is reserved for future assigned-event access and does not receive admin access by default.
 - `client` is reserved for portal identities; current portal ownership is enforced through `clients.portal_user_id`.
 - Portal clients can read their own client profile, events, invoices, invoice items, payments, contracts, and non-private event notes.

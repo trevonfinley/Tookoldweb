@@ -13,7 +13,7 @@ Mission Control is the private DJ Too Kold admin workspace for bookings, clients
 ## Gatekeeper Notes
 
 - The dashboard shell stays hidden until the browser has Project Neo config, a Supabase session, and a successful `/admin/me` response.
-- Admin data must only load from `/admin/*` API routes after `requireAdmin` verifies an active `owner`, `admin`, or `staff` user.
+- Admin data must only load from `/admin/*` API routes after `requireAdmin` verifies an active `owner` or `admin` user.
 - Dashboard pages use `noindex,nofollow` and should not expose service-role keys or private records in static HTML.
 
 ## Ledger Notes

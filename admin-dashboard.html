@@ -331,6 +331,22 @@
             </article>
             <article class="admin-panel admin-settings-panel">
               <div class="admin-panel-heading">
+                <h3>Passkeys</h3>
+              </div>
+              <div class="auth-settings-stack">
+                <form class="passkey-register-form" data-passkey-register-form novalidate>
+                  <label class="admin-filter-field">
+                    <span>Friendly name</span>
+                    <input name="friendlyName" type="text" autocomplete="off" placeholder="MacBook Touch ID">
+                  </label>
+                  <button class="btn-secondary auth-provider-button" type="submit">Register Passkey</button>
+                </form>
+                <p class="auth-support-note" data-passkey-settings-message></p>
+                <ul class="passkey-list" data-passkey-list></ul>
+              </div>
+            </article>
+            <article class="admin-panel admin-settings-panel">
+              <div class="admin-panel-heading">
                 <h3>Data</h3>
               </div>
               <dl class="admin-details-list">
@@ -356,6 +372,8 @@
 
   <script src="project-neo-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="auth-client.js" defer></script>
+  <script src="passkeys.js" defer></script>
   <script src="admin.js" defer></script>
 </body>
 </html>
