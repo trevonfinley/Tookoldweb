@@ -1,0 +1,16 @@
+{
+  "name": "project-neo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DJ Too Kold custom website and Project Neo admin platform deployment workflow.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-site.mjs",
+    "validate": "node scripts/validate-deploy.mjs",
+    "dev": "python3 -m http.server 4173",
+    "preview": "npm run build && python3 -m http.server 4173 --directory dist"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

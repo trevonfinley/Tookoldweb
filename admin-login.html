@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Project Neo Admin | DJ Too Kold</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-body" data-admin-page="login">
+  <header class="admin-header">
+    <a class="brand" href="index.html" aria-label="DJ Too Kold home">
+      <span class="brand-mark" aria-hidden="true">TK</span>
+      <span>DJ Too Kold</span>
+    </a>
+    <span class="admin-product-name">Project Neo</span>
+  </header>
+
+  <main class="admin-auth-main">
+    <section class="admin-auth-panel" aria-labelledby="admin-login-title">
+      <p class="eyebrow">Admin access</p>
+      <h1 id="admin-login-title">Project Neo Admin</h1>
+
+      <form class="admin-login-form" data-admin-login-form novalidate>
+        <div class="form-group">
+          <label for="admin-email">Email</label>
+          <input id="admin-email" name="email" type="email" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+          <label for="admin-password">Password</label>
+          <input id="admin-password" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="btn-primary" type="submit">Sign In</button>
+        <p class="admin-status" data-admin-status aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
+
+  <script src="project-neo-config.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="admin.js" defer></script>
+</body>
+</html>

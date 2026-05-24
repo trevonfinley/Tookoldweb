@@ -1,2 +1,11 @@
 .DS_Store
+*.swp
+node_modules/
+dist/
+.vercel/
+.netlify/
 
+.env
+.env.*
+!.env.example
+!supabase/functions/.env.example

@@ -3,106 +3,259 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Request DJ Too Kold booking availability for your next event.">
-  <title>Booking | DJ Too Kold</title>
+  <meta name="description" content="Request DJ Too Kold booking availability for a Birmingham wedding, prom, school event, party, club night, corporate event, festival, concert, or private event.">
+  <title>Book a Birmingham DJ | DJ Too Kold Booking</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
   <header class="site-header">
-    <a class="brand" href="index.html" aria-label="DJ Too Kold home">DJ Too Kold</a>
-    <nav class="site-nav" aria-label="Main navigation">
+    <a class="brand" href="index.html" aria-label="DJ Too Kold home">
+      <span class="brand-mark" aria-hidden="true">TK</span>
+      <span>DJ Too Kold</span>
+    </a>
+    <button class="menu-toggle" type="button" aria-label="Open menu" aria-controls="site-nav" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <nav class="site-nav" id="site-nav" aria-label="Main navigation">
       <a href="index.html">Home</a>
       <a href="about.html">About</a>
-      <a href="booking.html" aria-current="page">Booking</a>
+      <a href="services.html">Services</a>
+      <a href="mixes.html">Mixes</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="events.html">Events</a>
       <a href="contact.html">Contact</a>
-      <a class="nav-cta" href="booking.html">Book Now</a>
+      <a href="client-portal.html" rel="nofollow">Portal</a>
+      <a class="nav-cta" href="booking.html" aria-current="page">Book Now</a>
     </nav>
   </header>
 
-  <main>
-    <section class="page-hero compact">
-      <p class="eyebrow">Booking request</p>
-      <h1>Share the event basics.</h1>
-      <p>Use this form to request availability. Include the date, city, venue, event type, guest count, and anything the music absolutely needs to do.</p>
+  <main id="main-content">
+    <section class="page-hero" data-reveal>
+      <p class="eyebrow">Birmingham DJ booking inquiry</p>
+      <h1>Start with the details that shape the night.</h1>
+      <p>Use this form to request availability for Birmingham, Central Alabama, or nearby events. Include the date, city, venue, event type, guest count, and anything the music absolutely needs to do.</p>
     </section>
 
-    <section class="section-inner form-layout">
+    <section class="section-inner form-layout" data-reveal>
       <div>
-        <h2>What happens next</h2>
+        <p class="eyebrow">What happens next</p>
+        <h2>Simple steps, clear communication.</h2>
         <div class="stack-list">
           <div>
             <h3>1. Availability check</h3>
-            <p>DJ Too Kold reviews the date, location, and event needs.</p>
+            <p>DJ Too Kold reviews the date, location, event type, and sound needs.</p>
           </div>
           <div>
             <h3>2. Event fit</h3>
-            <p>You'll confirm music direction, timing, sound needs, and expectations.</p>
+            <p>You confirm music direction, timing, announcements, clean edits, and expectations.</p>
           </div>
           <div>
             <h3>3. Lock it in</h3>
-            <p>Once the details work, you'll receive the next steps to secure the booking.</p>
+            <p>Once the details work, you receive next steps to secure the booking.</p>
           </div>
         </div>
       </div>
 
-      <form class="inquiry-form" id="booking-form" name="booking" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate>
+      <form class="inquiry-form booking-form" id="booking-form" name="booking" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate>
         <input type="hidden" name="form-name" value="booking">
         <p class="hidden">
-          <label>Don't fill this out if you're human: <input name="bot-field"></label>
+          <label>Do not fill this out if you are human: <input name="bot-field"></label>
         </p>
 
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="name">Name</label>
-            <input id="name" name="name" type="text" autocomplete="name" required>
-            <small class="error" data-error-for="name"></small>
-          </div>
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input id="email" name="email" type="email" autocomplete="email" required>
-            <small class="error" data-error-for="email"></small>
-          </div>
-        </div>
+        <p class="form-intro">Share the essentials. Required fields are marked with <span aria-hidden="true">*</span>.</p>
 
-        <div class="form-grid">
+        <fieldset class="form-section">
+          <legend>Your Info</legend>
           <div class="form-group">
-            <label for="event-date">Event date</label>
-            <input id="event-date" name="event-date" type="date">
+            <label for="client-name">Client name <span aria-hidden="true">*</span></label>
+            <input id="client-name" name="name" type="text" autocomplete="name" required>
+            <small class="error" data-error-for="clientName"></small>
           </div>
-          <div class="form-group">
-            <label for="event-type">Event type</label>
-            <input id="event-type" name="event-type" type="text" placeholder="Wedding, party, school event">
-          </div>
-        </div>
 
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="location">City / venue</label>
-            <input id="location" name="location" type="text">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="email">Email <span aria-hidden="true">*</span></label>
+              <input id="email" name="email" type="email" autocomplete="email" required>
+              <small class="error" data-error-for="email"></small>
+            </div>
+            <div class="form-group">
+              <label for="phone">Phone</label>
+              <input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel">
+              <span class="field-hint">Optional, but helpful for quick follow-up.</span>
+              <small class="error" data-error-for="phone"></small>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="guest-count">Estimated guests</label>
-            <input id="guest-count" name="guest-count" type="number" min="1" inputmode="numeric">
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Event Details</legend>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="event-type">Event type <span aria-hidden="true">*</span></label>
+              <select id="event-type" name="event-type" required>
+                <option value="">Select one</option>
+                <option>Wedding</option>
+                <option>Prom or school event</option>
+                <option>Nightlife or club event</option>
+                <option>Private party</option>
+                <option>Corporate event</option>
+                <option>Restaurant or lounge</option>
+                <option>Festival or concert</option>
+                <option>Social or community event</option>
+                <option>Other</option>
+              </select>
+              <small class="error" data-error-for="eventType"></small>
+            </div>
+            <div class="form-group">
+              <label for="event-date">Event date <span aria-hidden="true">*</span></label>
+              <input id="event-date" name="event-date" type="date" required>
+              <small class="error" data-error-for="eventDate"></small>
+            </div>
           </div>
-        </div>
 
-        <div class="form-group">
-          <label for="message">Event details</label>
-          <textarea id="message" name="message" rows="7" placeholder="Timeline, music direction, equipment needs, must-play songs, and anything else helpful." required></textarea>
-          <small class="error" data-error-for="message"></small>
-        </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="start-time">Start time</label>
+              <input id="start-time" name="start-time" type="time">
+            </div>
+            <div class="form-group">
+              <label for="end-time">End time</label>
+              <input id="end-time" name="end-time" type="time">
+              <small class="error" data-error-for="endTime"></small>
+            </div>
+          </div>
 
-        <button type="submit" class="btn-primary">Send Booking Request</button>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="guest-count">Estimated guests <span aria-hidden="true">*</span></label>
+              <input id="guest-count" name="guest-count" type="number" min="1" step="1" inputmode="numeric" required>
+              <small class="error" data-error-for="guestCount"></small>
+            </div>
+            <div class="form-group">
+              <label for="indoor-outdoor">Indoor / outdoor</label>
+              <select id="indoor-outdoor" name="indoor-outdoor">
+                <option value="">Select one</option>
+                <option value="indoor">Indoor</option>
+                <option value="outdoor">Outdoor</option>
+                <option value="both">Both</option>
+                <option value="not_sure">Not sure yet</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Venue</legend>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="venue-name">Venue name</label>
+              <input id="venue-name" name="venue-name" type="text" autocomplete="organization">
+            </div>
+            <div class="form-group">
+              <label for="city-state">City/state <span aria-hidden="true">*</span></label>
+              <input id="city-state" name="city-state" type="text" autocomplete="address-level2" placeholder="Birmingham, AL" aria-describedby="city-state-hint" required>
+              <span class="field-hint" id="city-state-hint">Birmingham, Hoover, Tuscaloosa, or another Alabama city.</span>
+              <small class="error" data-error-for="cityState"></small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="venue-address">Venue address</label>
+            <input id="venue-address" name="venue-address" type="text" autocomplete="street-address">
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Music And Budget</legend>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="budget-range">Budget range</label>
+              <select id="budget-range" name="budget-range">
+                <option value="">Select one</option>
+                <option>Under $750</option>
+                <option>$750-$1,200</option>
+                <option>$1,200-$1,800</option>
+                <option>$1,800-$2,500</option>
+                <option>$2,500+</option>
+                <option>Not sure yet</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="heard-about">How did you hear about DJ Too Kold?</label>
+              <select id="heard-about" name="heard-about">
+                <option value="">Select one</option>
+                <option>Referral</option>
+                <option>Instagram</option>
+                <option>Facebook</option>
+                <option>TikTok</option>
+                <option>Google search</option>
+                <option>Past event</option>
+                <option>Venue or planner</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="music-preferences">Music preferences</label>
+            <textarea id="music-preferences" name="music-preferences" rows="4" placeholder="Genres, clean edits, must-play songs, do-not-play songs, announcements, or crowd style."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="additional-notes">Additional notes</label>
+            <textarea id="additional-notes" name="additional-notes" rows="4" placeholder="Timeline, load-in details, special moments, equipment needs, or anything else helpful."></textarea>
+          </div>
+        </fieldset>
+
+        <button type="submit" class="btn-primary">Request Availability</button>
         <p id="form-status" aria-live="polite"></p>
         <p class="alt-contact">Prefer email? <a id="mailto-link" href="#">Email directly</a>.</p>
       </form>
     </section>
+
+    <section class="section-band">
+      <div class="section-inner booking-reminders" data-reveal>
+        <div>
+          <p class="eyebrow">Helpful details</p>
+          <h2>Share what you know. The rest can be shaped together.</h2>
+        </div>
+        <div class="mini-grid">
+          <p>Venue access and parking</p>
+          <p>Indoor or outdoor setup</p>
+          <p>Start and end times</p>
+          <p>Clean versions required</p>
+          <p>Microphone needs</p>
+          <p>Special dances or announcements</p>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
-    <p>&copy; 2026 DJ Too Kold. All rights reserved.</p>
+    <div class="footer-inner">
+      <div>
+        <a class="brand footer-brand" href="index.html" aria-label="DJ Too Kold home">
+          <span class="brand-mark" aria-hidden="true">TK</span>
+          <span>DJ Too Kold</span>
+        </a>
+        <p>Premium DJ entertainment for weddings, parties, nightlife, schools, corporate events, and social celebrations.</p>
+      </div>
+      <nav aria-label="Footer navigation">
+        <a href="services.html">Services</a>
+        <a href="mixes.html">Mixes</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="faq.html">FAQ</a>
+        <a href="client-portal.html" rel="nofollow">Client Portal</a>
+        <a href="booking.html">Book Now</a>
+      </nav>
+    </div>
+    <p class="copyright">&copy; 2026 DJ Too Kold. All rights reserved.</p>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="project-neo-config.js" defer></script>
+  <script src="script.js" defer></script>
 </body>
 </html>

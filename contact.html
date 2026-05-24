@@ -3,32 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Contact DJ Too Kold with booking questions, collaborations, or event details.">
-  <title>Contact | DJ Too Kold</title>
+  <meta name="description" content="Contact DJ Too Kold for Birmingham DJ booking questions, collaborations, private events, weddings, proms, school events, nightlife, and corporate events.">
+  <title>Contact DJ Too Kold | Birmingham DJ Booking</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
   <header class="site-header">
-    <a class="brand" href="index.html" aria-label="DJ Too Kold home">DJ Too Kold</a>
-    <nav class="site-nav" aria-label="Main navigation">
+    <a class="brand" href="index.html" aria-label="DJ Too Kold home">
+      <span class="brand-mark" aria-hidden="true">TK</span>
+      <span>DJ Too Kold</span>
+    </a>
+    <button class="menu-toggle" type="button" aria-label="Open menu" aria-controls="site-nav" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <nav class="site-nav" id="site-nav" aria-label="Main navigation">
       <a href="index.html">Home</a>
       <a href="about.html">About</a>
-      <a href="booking.html">Booking</a>
+      <a href="services.html">Services</a>
+      <a href="mixes.html">Mixes</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="events.html">Events</a>
       <a href="contact.html" aria-current="page">Contact</a>
+      <a href="client-portal.html" rel="nofollow">Portal</a>
       <a class="nav-cta" href="booking.html">Book Now</a>
     </nav>
   </header>
 
-  <main>
-    <section class="page-hero compact">
-      <p class="eyebrow">Contact</p>
-      <h1>Questions, collabs, or quick details?</h1>
-      <p>Send a message and include as much context as you can. For event availability, the booking form is the fastest route.</p>
+  <main id="main-content">
+    <section class="page-hero" data-reveal>
+      <p class="eyebrow">Contact a Birmingham DJ</p>
+      <h1>Questions, collaborations, and quick details.</h1>
+      <p>Send a message and include as much context as you can. For Birmingham or Alabama event availability, the booking form is the fastest route.</p>
     </section>
 
-    <section class="section-inner form-layout">
+    <section class="section-inner form-layout contact-section" data-reveal>
       <div>
-        <h2>Good details to include</h2>
+        <p class="eyebrow">Message guide</p>
+        <h2>Good details make the reply faster.</h2>
         <div class="stack-list">
           <div>
             <h3>For events</h3>
@@ -38,24 +52,28 @@
             <h3>For collaborations</h3>
             <p>Project details, timeline, links, and what kind of DJ support you need.</p>
           </div>
+          <div>
+            <h3>For general questions</h3>
+            <p>Ask directly and include any deadline, venue, or planning context that matters.</p>
+          </div>
         </div>
       </div>
 
       <form class="inquiry-form" id="contact-form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate>
         <input type="hidden" name="form-name" value="contact">
         <p class="hidden">
-          <label>Don't fill this out if you're human: <input name="bot-field"></label>
+          <label>Do not fill this out if you are human: <input name="bot-field"></label>
         </p>
 
         <div class="form-grid">
           <div class="form-group">
-            <label for="name">Name</label>
+            <label for="name">Name <span aria-hidden="true">*</span></label>
             <input id="name" name="name" type="text" autocomplete="name" required>
             <small class="error" data-error-for="name"></small>
           </div>
 
           <div class="form-group">
-            <label for="email">Email</label>
+            <label for="email">Email <span aria-hidden="true">*</span></label>
             <input id="email" name="email" type="email" autocomplete="email" required>
             <small class="error" data-error-for="email"></small>
           </div>
@@ -63,11 +81,11 @@
 
         <div class="form-group">
           <label for="subject">Subject</label>
-          <input id="subject" name="subject" type="text" placeholder="What's this about?">
+          <input id="subject" name="subject" type="text" placeholder="What is this about?">
         </div>
 
         <div class="form-group">
-          <label for="message">Message</label>
+          <label for="message">Message <span aria-hidden="true">*</span></label>
           <textarea id="message" name="message" rows="7" required></textarea>
           <small class="error" data-error-for="message"></small>
         </div>
@@ -77,12 +95,39 @@
         <p class="alt-contact">Prefer email? <a id="mailto-link" href="#">Email directly</a>.</p>
       </form>
     </section>
+
+    <section class="cta-strip" data-reveal>
+      <div>
+        <p class="eyebrow">Need availability?</p>
+        <h2>The booking form is the fastest route.</h2>
+        <p>Share your date, venue, guest count, and event type so the quote conversation starts clean.</p>
+      </div>
+      <a class="btn-primary" href="booking.html">Open Booking Form</a>
+    </section>
   </main>
 
   <footer class="site-footer">
-    <p>&copy; 2026 DJ Too Kold. All rights reserved.</p>
+    <div class="footer-inner">
+      <div>
+        <a class="brand footer-brand" href="index.html" aria-label="DJ Too Kold home">
+          <span class="brand-mark" aria-hidden="true">TK</span>
+          <span>DJ Too Kold</span>
+        </a>
+        <p>Premium DJ entertainment for weddings, parties, nightlife, schools, corporate events, and social celebrations.</p>
+      </div>
+      <nav aria-label="Footer navigation">
+        <a href="services.html">Services</a>
+        <a href="mixes.html">Mixes</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="faq.html">FAQ</a>
+        <a href="client-portal.html" rel="nofollow">Client Portal</a>
+        <a href="booking.html">Book Now</a>
+      </nav>
+    </div>
+    <p class="copyright">&copy; 2026 DJ Too Kold. All rights reserved.</p>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="project-neo-config.js" defer></script>
+  <script src="script.js" defer></script>
 </body>
 </html>

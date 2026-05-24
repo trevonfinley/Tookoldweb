@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Mission Control | Project Neo | DJ Too Kold</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-body" data-admin-page="dashboard">
+  <header class="admin-header">
+    <a class="brand" href="index.html" aria-label="DJ Too Kold home">
+      <span class="brand-mark" aria-hidden="true">TK</span>
+      <span>DJ Too Kold</span>
+    </a>
+    <div class="admin-account" data-admin-account hidden>
+      <span data-admin-email></span>
+      <span class="admin-role" data-admin-role></span>
+      <button class="btn-secondary admin-signout" type="button" data-admin-signout>Sign Out</button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <p class="admin-status" data-admin-status aria-live="polite"></p>
+
+    <section class="admin-shell" data-admin-shell hidden>
+      <aside class="admin-sidebar" aria-label="Admin sections">
+        <div class="admin-sidebar-title">
+          <span class="admin-product-name">Project Neo</span>
+          <strong>Mission Control</strong>
+        </div>
+        <nav class="admin-nav">
+          <button type="button" data-admin-nav="overview" aria-current="page">Overview</button>
+          <button type="button" data-admin-nav="booking-inquiries">Booking inquiries</button>
+          <button type="button" data-admin-nav="clients">Clients</button>
+          <button type="button" data-admin-nav="events">Events</button>
+          <button type="button" data-admin-nav="invoices">Invoices</button>
+          <button type="button" data-admin-nav="payments">Payments</button>
+          <button type="button" data-admin-nav="venues">Venues</button>
+          <button type="button" data-admin-nav="media">Gallery/media</button>
+          <button type="button" data-admin-nav="settings">Settings</button>
+        </nav>
+      </aside>
+
+      <div class="admin-workspace">
+        <div class="admin-title-row">
+          <div>
+            <p class="eyebrow">DJ Too Kold</p>
+            <h1>Mission Control</h1>
+          </div>
+          <div class="admin-title-actions">
+            <button class="btn-secondary admin-refresh" type="button" data-admin-refresh>Refresh</button>
+            <a class="btn-primary" href="booking.html">Public Booking</a>
+          </div>
+        </div>
+
+        <section class="admin-metrics" aria-label="Dashboard metrics">
+          <article>
+            <span>New inquiries</span>
+            <strong data-metric="new-inquiries">0</strong>
+          </article>
+          <article>
+            <span>Confirmed bookings</span>
+            <strong data-metric="confirmed-bookings">0</strong>
+          </article>
+          <article>
+            <span>Upcoming events</span>
+            <strong data-metric="upcoming-events">0</strong>
+          </article>
+          <article>
+            <span>Open invoices</span>
+            <strong data-metric="open-invoices">0</strong>
+          </article>
+          <article>
+            <span>Balance due</span>
+            <strong data-metric="total-balance-due">$0</strong>
+          </article>
+        </section>
+
+        <section class="admin-section" data-admin-section="overview">
+          <div class="admin-section-heading">
+            <div>
+              <p class="eyebrow">Overview</p>
+              <h2>Business Snapshot</h2>
+            </div>
+          </div>
+
+          <div class="admin-overview-grid">
+            <article class="admin-panel">
+              <div class="admin-panel-heading">
+                <h3>Upcoming Events</h3>
+              </div>
+              <ul class="admin-list" data-list="next-events"></ul>
+            </article>
+
+            <article class="admin-panel">
+              <div class="admin-panel-heading">
+                <h3>New Booking Inquiries</h3>
+              </div>
+              <ul class="admin-list" data-list="recent-inquiries"></ul>
+            </article>
+
+            <article class="admin-panel">
+              <div class="admin-panel-heading">
+                <h3>Unpaid Invoices</h3>
+              </div>
+              <ul class="admin-list" data-list="open-invoices"></ul>
+            </article>
+
+          </div>
+        </section>
+
+        <section class="admin-section" data-admin-section="booking-inquiries" hidden>
+          <div class="admin-section-heading">
+            <div>
+              <p class="eyebrow">Booking pipeline</p>
+              <h2>Booking Inquiries</h2>
+            </div>
+          </div>
+          <div class="admin-tools">
+            <label class="admin-filter-field">
+              <span>Search</span>
+              <input type="search" data-admin-search="booking-inquiries" autocomplete="off">
+            </label>
+            <label class="admin-filter-field">
+              <span>Status</span>
+              <select data-admin-status-filter="booking-inquiries"></select>
+            </label>
+          </div>
+          <div class="admin-record-layout">
+            <article class="admin-panel admin-table-panel">
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead data-table-head="booking-inquiries"></thead>
+                  <tbody data-table="booking-inquiries"></tbody>
+                </table>
+              </div>
+            </article>
+            <aside class="admin-detail" data-detail="booking-inquiries" aria-live="polite"></aside>
+          </div>
+        </section>
+
+        <section class="admin-section" data-admin-section="clients" hidden>
+          <div class="admin-section-heading">
+            <div>
+              <p class="eyebrow">Relationships</p>
+              <h2>Clients</h2>
+            </div>
+          </div>
+          <div class="admin-tools">
+            <label class="admin-filter-field">
+              <span>Search</span>
+              <input type="search" data-admin-search="clients" autocomplete="off">
+            </label>
+            <label class="admin-filter-field">
+              <span>Contact</span>
+              <select data-admin-status-filter="clients"></select>
+            </label>
+          </div>
+          <div class="admin-record-layout">
+            <article class="admin-panel admin-table-panel">
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead data-table-head="clients"></thead>
+                  <tbody data-table="clients"></tbody>
+                </table>
+              </div>
+            </article>
+            <aside class="admin-detail" data-detail="clients" aria-live="polite"></aside>
+          </div>
+        </section>
+
+        <section class="admin-section" data-admin-section="events" hidden>
+          <div class="admin-section-heading">
+            <div>
+              <p class="eyebrow">Schedule</p>
+              <h2>Events</h2>
+            </div>
+          </div>
+          <div class="admin-tools">
+            <label class="admin-filter-field">
+              <span>Search</span>
+              <input type="search" data-admin-search="events" autocomplete="off">
+            </label>
+            <label class="admin-filter-field">
+              <span>Status</span>
+              <select data-admin-status-filter="events"></select>
+            </label>
+          </div>
+          <div class="admin-record-layout">
+            <article class="admin-panel admin-table-panel">
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead data-table-head="events"></thead>
+                  <tbody data-table="events"></tbody>
+                </table>
+              </div>
+            </article>
+            <aside class="admin-detail" data-detail="events" aria-live="polite"></aside>
+          </div>
+        </section>
+
+        <section class="admin-section" data-admin-section="invoices" hidden>
+          <div class="admin-section-heading">
+            <div>
+              <p class="eyebrow">Receivables</p>
+              <h2>Invoices</h2>
+            </div>
+          </div>
+          <div class="admin-tools">
+            <label class="admin-filter-field">
+              <span>Search</span>
+              <input type="search" data-admin-search="invoices" autocomplete="off">
+            </label>
+            <label class="admin-filter-field">
+              <span>Status</span>
+              <select data-admin-status-filter="invoices"></select>
+            </label>
+          </div>
+          <div class="admin-record-layout">
+            <article class="admin-panel admin-table-panel">
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead data-table-head="invoices"></thead>
+                  <tbody data-table="invoices"></tbody>
+                </table>
+              </div>
+            </article>
+            <aside class="admin-detail" data-detail="invoices" aria-live="polite"></aside>
+          </div>
+        </section>
+
+        <section class="admin-section" data-admin-section="payments" hidden>
+          <div class="admin-section-heading">
+            <div>
+              <p class="eyebrow">Ledger</p>
+              <h2>Payments</h2>
+            </div>
+          </div>
+          <div class="admin-tools">
+            <label class="admin-filter-field">
+              <span>Search</span>
+              <input type="search" data-admin-search="payments" autocomplete="off">
+            </label>
+            <label class="admin-filter-field">
+              <span>Status</span>
+              <select data-admin-status-filter="payments"></select>
+            </label>
+          </div>
+          <div class="admin-record-layout">
+            <article class="admin-panel admin-table-panel">
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead data-table-head="payments"></thead>
+                  <tbody data-table="payments"></tbody>
+                </table>
+              </div>
+            </article>
+            <aside class="admin-detail" data-detail="payments" aria-live="polite"></aside>
+          </div>
+        </section>
+
+        <section class="admin-section" data-admin-section="venues" hidden>
+          <div class="admin-section-heading">
+            <div>
+              <p class="eyebrow">Logistics</p>
+              <h2>Venues</h2>
+            </div>
+          </div>
+          <div class="admin-tools">
+            <label class="admin-filter-field">
+              <span>Search</span>
+              <input type="search" data-admin-search="venues" autocomplete="off">
+            </label>
+            <label class="admin-filter-field">
+              <span>Type</span>
+              <select data-admin-status-filter="venues"></select>
+            </label>
+          </div>
+          <div class="admin-card-grid" data-card-list="venues"></div>
+          <aside class="admin-detail admin-detail-wide" data-detail="venues" aria-live="polite"></aside>
+        </section>
+
+        <section class="admin-section" data-admin-section="media" hidden>
+          <div class="admin-section-heading">
+            <div>
+              <p class="eyebrow">Assets</p>
+              <h2>Gallery/Media</h2>
+            </div>
+          </div>
+          <div class="admin-tools">
+            <label class="admin-filter-field">
+              <span>Search</span>
+              <input type="search" data-admin-search="media" autocomplete="off">
+            </label>
+            <label class="admin-filter-field">
+              <span>Status</span>
+              <select data-admin-status-filter="media"></select>
+            </label>
+          </div>
+          <div class="admin-card-grid" data-card-list="media"></div>
+          <aside class="admin-detail admin-detail-wide" data-detail="media" aria-live="polite"></aside>
+        </section>
+
+        <section class="admin-section" data-admin-section="settings" hidden>
+          <div class="admin-section-heading">
+            <div>
+              <p class="eyebrow">Workspace</p>
+              <h2>Settings</h2>
+            </div>
+          </div>
+          <div class="admin-settings-grid">
+            <article class="admin-panel admin-settings-panel">
+              <div class="admin-panel-heading">
+                <h3>Access</h3>
+              </div>
+              <dl class="admin-details-list">
+                <div>
+                  <dt>Signed in</dt>
+                  <dd data-settings="email"></dd>
+                </div>
+                <div>
+                  <dt>Role</dt>
+                  <dd data-settings="role"></dd>
+                </div>
+                <div>
+                  <dt>Route guard</dt>
+                  <dd>Enabled</dd>
+                </div>
+              </dl>
+            </article>
+            <article class="admin-panel admin-settings-panel">
+              <div class="admin-panel-heading">
+                <h3>Data</h3>
+              </div>
+              <dl class="admin-details-list">
+                <div>
+                  <dt>Admin API</dt>
+                  <dd data-settings="api"></dd>
+                </div>
+                <div>
+                  <dt>Supabase auth</dt>
+                  <dd data-settings="supabase"></dd>
+                </div>
+                <div>
+                  <dt>Public indexing</dt>
+                  <dd>Noindex</dd>
+                </div>
+              </dl>
+            </article>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="project-neo-config.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="admin.js" defer></script>
+</body>
+</html>

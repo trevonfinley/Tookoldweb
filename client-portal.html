@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Client Portal | Project Neo | DJ Too Kold</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="portal-body" data-portal-page="dashboard">
+  <header class="admin-header portal-header">
+    <a class="brand" href="index.html" aria-label="DJ Too Kold home">
+      <span class="brand-mark" aria-hidden="true">TK</span>
+      <span>DJ Too Kold</span>
+    </a>
+    <div class="admin-account" data-portal-account hidden>
+      <span data-portal-email></span>
+      <span class="admin-role">Client Portal</span>
+      <button class="btn-secondary admin-signout" type="button" data-portal-signout>Sign Out</button>
+    </div>
+  </header>
+
+  <main class="portal-main">
+    <p class="admin-status portal-status" data-portal-status aria-live="polite"></p>
+
+    <section class="admin-auth-main portal-auth" data-portal-auth>
+      <article class="admin-auth-panel" aria-labelledby="portal-login-title">
+        <p class="eyebrow">Project Neo</p>
+        <h1 id="portal-login-title">Client Portal</h1>
+        <form class="admin-login-form" data-portal-login-form novalidate>
+          <div class="form-group">
+            <label for="portal-email">Email</label>
+            <input id="portal-email" name="email" type="email" autocomplete="email" required>
+          </div>
+          <div class="form-group">
+            <label for="portal-password">Password</label>
+            <input id="portal-password" name="password" type="password" autocomplete="current-password" required>
+          </div>
+          <button class="btn-primary" type="submit">Sign In</button>
+        </form>
+      </article>
+    </section>
+
+    <section class="portal-shell" data-portal-shell hidden>
+      <section class="portal-hero" aria-labelledby="portal-title">
+        <div>
+          <p class="eyebrow">DJ Too Kold</p>
+          <h1 id="portal-title">Welcome, <span data-client-name>client</span>.</h1>
+          <p data-portal-subtitle>Your event details are ready.</p>
+        </div>
+        <label class="portal-event-picker">
+          <span>Event</span>
+          <select data-event-select></select>
+        </label>
+      </section>
+
+      <nav class="portal-tabs" aria-label="Client portal sections">
+        <a href="#event-overview">Overview</a>
+        <a href="#invoice-balance">Invoice</a>
+        <a href="#song-requests">Songs</a>
+        <a href="#contract-status">Contract</a>
+        <a href="#notes-preferences">Notes</a>
+      </nav>
+
+      <section class="portal-grid">
+        <article class="portal-panel portal-panel-large" id="event-overview">
+          <div class="portal-panel-heading">
+            <div>
+              <p class="eyebrow">Event overview</p>
+              <h2 data-event-title>Event Details</h2>
+            </div>
+            <span class="admin-badge" data-event-status>Pending</span>
+          </div>
+          <dl class="portal-details" data-event-details></dl>
+        </article>
+
+        <article class="portal-panel" id="event-timeline">
+          <div class="portal-panel-heading">
+            <div>
+              <p class="eyebrow">Timeline</p>
+              <h2>Event Flow</h2>
+            </div>
+          </div>
+          <ol class="portal-timeline" data-event-timeline></ol>
+        </article>
+
+        <article class="portal-panel portal-panel-large" id="invoice-balance">
+          <div class="portal-panel-heading">
+            <div>
+              <p class="eyebrow">Invoice and balance</p>
+              <h2>Payment Status</h2>
+            </div>
+            <span class="admin-badge" data-invoice-status>Pending</span>
+          </div>
+          <div class="portal-money-grid" data-invoice-metrics></div>
+          <div class="portal-action-row" data-payment-actions></div>
+          <div class="portal-subsection">
+            <h3>Invoice Items</h3>
+            <ul class="portal-list" data-invoice-items></ul>
+          </div>
+          <div class="portal-subsection">
+            <h3>Payments</h3>
+            <ul class="portal-list" data-payment-list></ul>
+          </div>
+        </article>
+
+        <article class="portal-panel" id="contract-status">
+          <div class="portal-panel-heading">
+            <div>
+              <p class="eyebrow">Contract status</p>
+              <h2>Agreement</h2>
+            </div>
+            <span class="admin-badge" data-contract-status>Pending</span>
+          </div>
+          <dl class="portal-details" data-contract-details></dl>
+          <div class="portal-action-row" data-contract-actions></div>
+        </article>
+
+        <article class="portal-panel" id="venue-details">
+          <div class="portal-panel-heading">
+            <div>
+              <p class="eyebrow">Venue details</p>
+              <h2>Location</h2>
+            </div>
+          </div>
+          <dl class="portal-details" data-venue-details></dl>
+        </article>
+
+        <article class="portal-panel portal-panel-large" id="song-requests">
+          <div class="portal-panel-heading">
+            <div>
+              <p class="eyebrow">Song requests</p>
+              <h2>Music List</h2>
+            </div>
+          </div>
+          <form class="portal-form" data-song-form novalidate>
+            <input type="hidden" name="songRequestId">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="song-title">Song title</label>
+                <input id="song-title" name="songTitle" type="text" required>
+              </div>
+              <div class="form-group">
+                <label for="artist">Artist</label>
+                <input id="artist" name="artist" type="text">
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="dedication">Dedication</label>
+                <input id="dedication" name="dedication" type="text">
+              </div>
+              <label class="portal-check">
+                <input name="isMustPlay" type="checkbox">
+                <span>Must play</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label for="song-notes">Notes</label>
+              <textarea id="song-notes" name="notes" rows="3"></textarea>
+            </div>
+            <div class="portal-form-actions">
+              <button class="btn-primary" type="submit" data-song-submit>Add Song</button>
+              <button class="btn-secondary portal-light-button" type="button" data-song-cancel hidden>Cancel Edit</button>
+            </div>
+            <p class="portal-inline-status" data-song-status aria-live="polite"></p>
+          </form>
+          <ul class="portal-list portal-song-list" data-song-list></ul>
+        </article>
+
+        <article class="portal-panel" id="notes-preferences">
+          <div class="portal-panel-heading">
+            <div>
+              <p class="eyebrow">Notes and preferences</p>
+              <h2>Planning Notes</h2>
+            </div>
+          </div>
+          <div class="portal-note-list" data-note-list></div>
+        </article>
+
+        <article class="portal-panel" id="contact-dj">
+          <div class="portal-panel-heading">
+            <div>
+              <p class="eyebrow">Contact</p>
+              <h2>DJ Too Kold</h2>
+            </div>
+          </div>
+          <dl class="portal-details">
+            <div>
+              <dt>Email</dt>
+              <dd><a data-contact-email href="mailto:info@tookoldweb.com">info@tookoldweb.com</a></dd>
+            </div>
+          </dl>
+          <div class="portal-action-row">
+            <a class="btn-primary" data-contact-link href="mailto:info@tookoldweb.com">Email DJ Too Kold</a>
+            <a class="btn-secondary portal-light-button" href="booking.html">Booking Form</a>
+          </div>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <script src="project-neo-config.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="client-portal.js" defer></script>
+</body>
+</html>
