@@ -32,6 +32,7 @@ These values are safe to use in browser code when Row Level Security and API aut
 | `SUPABASE_URL` | Production yes | `https://PROJECT_REF.supabase.co` | Public Supabase project URL. |
 | `SUPABASE_PUBLISHABLE_KEY` | Production yes | `sb_publishable_...` or anon key | Browser key only. Never use a secret or service role key here. |
 | `PROJECT_NEO_ADMIN_EMAIL` | Optional | `admin@example.com` | Public support/admin contact if UI needs it. |
+| `PROJECT_NEO_PUBLIC_CONTACT_EMAIL` | Optional | `djtookold@gmail.com` | Public email used for direct `mailto:` links and website contact metadata. |
 | `PROJECT_NEO_REQUIRE_PUBLIC_CONFIG` | Optional | `true` | Makes non-production builds fail when public config is missing. |
 
 ### Supabase Auth Provider Configuration

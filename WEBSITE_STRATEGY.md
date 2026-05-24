@@ -39,7 +39,7 @@ People planning weddings, private parties, proms, school events, corporate event
 ## Booking System
 
 - Connect forms to Netlify Forms, Formspree, or a custom endpoint.
-- Replace `info@tookoldweb.com` in `script.js` with the real public booking email.
+- Confirmed public booking/contact email: `djtookold@gmail.com`.
 - Add required booking fields only after confirming what DJ Too Kold needs to quote accurately.
 
 ## Trust Builders
@@ -54,7 +54,7 @@ People planning weddings, private parties, proms, school events, corporate event
 - Add a favicon and social preview image.
 - Add real Open Graph preview metadata.
 - Run accessibility, mobile layout, and form-submission checks.
-- Confirm the public booking email and any social links before launch.
+- Confirm any social links before launch.
 
 ## Design Direction
 

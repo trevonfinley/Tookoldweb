@@ -51,7 +51,7 @@ If the lead is missing key details, reply with the smallest number of questions 
 
 Replace or confirm these before the public launch:
 
-- Real booking email in `script.js` / config.
+- Public booking/contact email confirmed as `djtookold@gmail.com` in config.
 - Real client testimonials.
 - Real gallery photos and alt text.
 - Real mix embeds or audio files.

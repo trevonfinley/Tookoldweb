@@ -9,7 +9,9 @@
   const statusEl = document.querySelector("[data-portal-status]");
   const authPanel = document.querySelector("[data-portal-auth]");
   const shell = document.querySelector("[data-portal-shell]");
-  const contactEmail = "info@tookoldweb.com";
+  const contactEmail = typeof config.publicContactEmail === "string" && config.publicContactEmail.trim()
+    ? config.publicContactEmail.trim()
+    : "djtookold@gmail.com";
   let supabaseClient = null;
 
   const state = {

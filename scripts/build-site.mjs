@@ -21,6 +21,7 @@ const publicConfig = {
   supabasePublishableKey: cleanString(env.SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY),
   appUrl: cleanUrl(env.PROJECT_NEO_APP_URL),
   adminEmail: cleanString(env.PROJECT_NEO_ADMIN_EMAIL),
+  publicContactEmail: cleanString(env.PROJECT_NEO_PUBLIC_CONTACT_EMAIL) || "djtookold@gmail.com",
   environment: cleanString(deploymentEnv),
 };
 

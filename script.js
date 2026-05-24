@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const apiBaseUrl = typeof projectNeoConfig.apiBaseUrl === 'string'
     ? projectNeoConfig.apiBaseUrl.replace(/\/+$/, '')
     : '';
+  const publicContactEmail = typeof projectNeoConfig.publicContactEmail === 'string' && projectNeoConfig.publicContactEmail.trim()
+    ? projectNeoConfig.publicContactEmail.trim()
+    : 'djtookold@gmail.com';
 
   const syncHeader = () => {
     if (!header) return;
@@ -151,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusEl = form.querySelector('#form-status');
     const mailtoLink = form.querySelector('#mailto-link');
     const submitButton = form.querySelector('button[type="submit"]');
-    const publicEmail = 'info@tookoldweb.com';
+    const publicEmail = publicContactEmail;
     const isBookingForm = form.id === 'booking-form';
     const defaultEndpoint = apiBaseUrl
       ? `${apiBaseUrl}/${isBookingForm ? 'booking-inquiries' : 'contact-messages'}`

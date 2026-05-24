@@ -4,5 +4,6 @@ window.ProjectNeoConfig = Object.freeze({
   supabasePublishableKey: "",
   appUrl: "",
   adminEmail: "",
+  publicContactEmail: "djtookold@gmail.com",
   environment: "development"
 });
