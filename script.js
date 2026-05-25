@@ -11,6 +11,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const publicContactEmail = typeof projectNeoConfig.publicContactEmail === 'string' && projectNeoConfig.publicContactEmail.trim()
     ? projectNeoConfig.publicContactEmail.trim()
     : 'djtookold@gmail.com';
+  let bookingAvailabilitySnapshot = null;
+
+  const publicAvailabilityStatuses = new Set(['available', 'pending', 'unavailable', 'contact_required']);
+  const readTrimmedValue = (field) => (field && field.value ? field.value.trim() : '');
+  const todayInputValue = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const setBookingAvailabilitySnapshot = (snapshot) => {
+    bookingAvailabilitySnapshot = snapshot;
+    const bookingForm = document.querySelector('#booking-form');
+    if (!bookingForm) return;
+
+    const statusInput = bookingForm.querySelector('#availability-status-at-submission');
+    const checkedAtInput = bookingForm.querySelector('#availability-checked-at');
+    if (statusInput) statusInput.value = snapshot ? snapshot.status : '';
+    if (checkedAtInput) checkedAtInput.value = snapshot ? snapshot.checkedAt : '';
+  };
 
   const syncHeader = () => {
     if (!header) return;
@@ -150,6 +172,244 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  const availabilityChecker = document.querySelector('[data-availability-checker]');
+  if (availabilityChecker) {
+    const resultEl = availabilityChecker.querySelector('[data-availability-result]');
+    const submitButton = availabilityChecker.querySelector('button[type="submit"]');
+    const continueButton = availabilityChecker.querySelector('[data-availability-continue]');
+    const checkFields = {
+      eventDate: availabilityChecker.querySelector('#check-event-date'),
+      startTime: availabilityChecker.querySelector('#check-start-time'),
+      endTime: availabilityChecker.querySelector('#check-end-time'),
+      eventType: availabilityChecker.querySelector('#check-event-type'),
+      cityState: availabilityChecker.querySelector('#check-city-state')
+    };
+    const checkErrors = {};
+
+    availabilityChecker.querySelectorAll('[data-check-error-for]').forEach((error) => {
+      checkErrors[error.dataset.checkErrorFor] = error;
+    });
+
+    if (checkFields.eventDate) checkFields.eventDate.min = todayInputValue();
+
+    const setCheckError = (key, message) => {
+      if (checkErrors[key]) checkErrors[key].textContent = message;
+      if (checkFields[key]) checkFields[key].setAttribute('aria-invalid', message ? 'true' : 'false');
+    };
+
+    const clearCheckErrors = () => {
+      Object.keys(checkErrors).forEach((key) => setCheckError(key, ''));
+    };
+
+    const setCheckerLoading = (isLoading) => {
+      if (submitButton) {
+        submitButton.disabled = isLoading;
+        submitButton.textContent = isLoading ? 'Checking...' : 'Check Availability';
+      }
+      if (isLoading && resultEl) {
+        delete resultEl.dataset.status;
+        resultEl.textContent = 'Checking availability...';
+        resultEl.hidden = false;
+      }
+      if (isLoading && continueButton) continueButton.hidden = true;
+    };
+
+    const normalizeAvailabilityStatus = (value) => {
+      const status = String(value || '').trim();
+      return publicAvailabilityStatuses.has(status) ? status : 'contact_required';
+    };
+
+    const availabilityCopy = {
+      available: {
+        title: 'Appears available',
+        message: 'This date appears available. Submit your inquiry to start the booking process.'
+      },
+      pending: {
+        title: 'Pending review',
+        message: 'This date may have another request pending. Submit your inquiry and we will confirm availability.'
+      },
+      unavailable: {
+        title: 'Currently unavailable',
+        message: 'This date is currently unavailable. You can still contact us about alternate times.'
+      },
+      contact_required: {
+        title: 'Manual review needed',
+        message: 'This date needs manual review. Submit your inquiry and we will follow up.'
+      }
+    };
+
+    const renderAvailabilityResult = (result, isError = false) => {
+      if (!resultEl) return;
+      const status = isError ? 'contact_required' : normalizeAvailabilityStatus(result?.status);
+      const copy = availabilityCopy[status] || availabilityCopy.contact_required;
+      const message = typeof result?.message === 'string' && result.message.trim()
+        ? result.message.trim()
+        : copy.message;
+
+      resultEl.textContent = '';
+      resultEl.dataset.status = status;
+
+      const heading = document.createElement('div');
+      heading.className = 'availability-result-heading';
+
+      const title = document.createElement('strong');
+      title.textContent = copy.title;
+
+      const badge = document.createElement('span');
+      badge.className = 'availability-result-badge';
+      badge.textContent = status.replace(/_/g, ' ');
+
+      const body = document.createElement('p');
+      body.textContent = message;
+
+      const note = document.createElement('small');
+      note.textContent = 'This is an availability estimate, not a confirmed booking.';
+
+      heading.append(title, badge);
+      resultEl.append(heading, body, note);
+      resultEl.hidden = false;
+      if (continueButton) continueButton.hidden = false;
+    };
+
+    const checkerPayload = () => ({
+      eventDate: readTrimmedValue(checkFields.eventDate),
+      event_date: readTrimmedValue(checkFields.eventDate),
+      startTime: readTrimmedValue(checkFields.startTime),
+      start_time: readTrimmedValue(checkFields.startTime),
+      endTime: readTrimmedValue(checkFields.endTime),
+      end_time: readTrimmedValue(checkFields.endTime),
+      eventType: readTrimmedValue(checkFields.eventType),
+      event_type: readTrimmedValue(checkFields.eventType),
+      cityState: readTrimmedValue(checkFields.cityState),
+      city_state: readTrimmedValue(checkFields.cityState)
+    });
+
+    const validateChecker = () => {
+      clearCheckErrors();
+      let ok = true;
+
+      if (!readTrimmedValue(checkFields.eventDate)) {
+        setCheckError('eventDate', 'Please choose an event date.');
+        ok = false;
+      } else if (checkFields.eventDate && readTrimmedValue(checkFields.eventDate) < checkFields.eventDate.min) {
+        setCheckError('eventDate', 'Please choose today or a future date.');
+        ok = false;
+      }
+
+      if (!readTrimmedValue(checkFields.eventType)) {
+        setCheckError('eventType', 'Please choose an event type.');
+        ok = false;
+      }
+
+      if (!readTrimmedValue(checkFields.startTime)) {
+        setCheckError('startTime', 'Please add a start time.');
+        ok = false;
+      }
+
+      if (!readTrimmedValue(checkFields.endTime)) {
+        setCheckError('endTime', 'Please add an end time.');
+        ok = false;
+      }
+
+      if (
+        readTrimmedValue(checkFields.startTime) &&
+        readTrimmedValue(checkFields.endTime) &&
+        readTrimmedValue(checkFields.endTime) <= readTrimmedValue(checkFields.startTime)
+      ) {
+        setCheckError('endTime', 'End time should be after start time.');
+        ok = false;
+      }
+
+      return ok;
+    };
+
+    availabilityChecker.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      setBookingAvailabilitySnapshot(null);
+
+      if (!validateChecker()) {
+        renderAvailabilityResult({
+          status: 'contact_required',
+          message: 'Add the required event details to check availability.'
+        }, true);
+        return;
+      }
+
+      if (!apiBaseUrl) {
+        renderAvailabilityResult({
+          status: 'contact_required',
+          message: 'Availability checking is not connected right now. You can still send an inquiry.'
+        }, true);
+        return;
+      }
+
+      try {
+        setCheckerLoading(true);
+        const response = await fetch(`${apiBaseUrl}/availability-check`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(checkerPayload())
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || payload?.ok === false) {
+          throw new Error(payload?.error?.message || 'Availability check failed');
+        }
+
+        const result = payload?.data && typeof payload.data === 'object' ? payload.data : payload;
+        const status = normalizeAvailabilityStatus(result?.status);
+        const checkedAt = typeof result?.checked_at === 'string' && result.checked_at
+          ? result.checked_at
+          : new Date().toISOString();
+
+        setBookingAvailabilitySnapshot({ status, checkedAt });
+        renderAvailabilityResult({ ...result, status, checked_at: checkedAt });
+      } catch (err) {
+        console.error(err);
+        setBookingAvailabilitySnapshot(null);
+        renderAvailabilityResult({
+          status: 'contact_required',
+          message: 'Availability checking is unavailable right now. You can still send an inquiry.'
+        }, true);
+      } finally {
+        setCheckerLoading(false);
+      }
+    });
+
+    if (continueButton) {
+      continueButton.addEventListener('click', () => {
+        const bookingForm = document.querySelector('#booking-form');
+        if (!bookingForm) return;
+
+        const snapshotToCarry = bookingAvailabilitySnapshot;
+        const copyMap = {
+          '#event-date': checkFields.eventDate,
+          '#start-time': checkFields.startTime,
+          '#end-time': checkFields.endTime,
+          '#event-type': checkFields.eventType,
+          '#city-state': checkFields.cityState
+        };
+
+        Object.entries(copyMap).forEach(([selector, sourceField]) => {
+          const targetField = bookingForm.querySelector(selector);
+          if (!targetField || !sourceField) return;
+          targetField.value = readTrimmedValue(sourceField);
+          targetField.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+
+        setBookingAvailabilitySnapshot(snapshotToCarry);
+        bookingForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        const firstInput = bookingForm.querySelector('#client-name');
+        window.setTimeout(() => {
+          if (firstInput) firstInput.focus({ preventScroll: true });
+        }, 350);
+      });
+    }
+  }
+
   document.querySelectorAll('.inquiry-form').forEach((form) => {
     const statusEl = form.querySelector('#form-status');
     const mailtoLink = form.querySelector('#mailto-link');
@@ -178,7 +438,9 @@ document.addEventListener('DOMContentLoaded', () => {
           musicPreferences: getField('#music-preferences'),
           budgetRange: getField('#budget-range'),
           heardAbout: getField('#heard-about'),
-          additionalNotes: getField('#additional-notes')
+          additionalNotes: getField('#additional-notes'),
+          availabilityStatusAtSubmission: getField('#availability-status-at-submission'),
+          availabilityCheckedAt: getField('#availability-checked-at')
         }
       : {
           name: getField('#name'),
@@ -251,6 +513,10 @@ document.addEventListener('DOMContentLoaded', () => {
       budgetRange: valueOf(fields.budgetRange),
       heardAbout: valueOf(fields.heardAbout),
       additionalNotes: valueOf(fields.additionalNotes),
+      availabilityStatusAtSubmission: valueOf(fields.availabilityStatusAtSubmission),
+      availabilityCheckedAt: valueOf(fields.availabilityCheckedAt),
+      availability_status_at_submission: valueOf(fields.availabilityStatusAtSubmission),
+      availability_checked_at: valueOf(fields.availabilityCheckedAt),
       source: 'website'
     });
 
@@ -297,6 +563,16 @@ document.addEventListener('DOMContentLoaded', () => {
       field.addEventListener('change', setMailtoHref);
     });
     setMailtoHref();
+
+    if (isBookingForm) {
+      ['eventType', 'eventDate', 'startTime', 'endTime', 'cityState'].forEach((key) => {
+        const field = fields[key];
+        if (!field) return;
+        const clearStoredAvailability = () => setBookingAvailabilitySnapshot(null);
+        field.addEventListener('input', clearStoredAvailability);
+        field.addEventListener('change', clearStoredAvailability);
+      });
+    }
 
     const requireField = (key, message) => {
       if (valueOf(fields[key])) return true;
@@ -391,6 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
           'success'
         );
         form.reset();
+        if (isBookingForm) setBookingAvailabilitySnapshot(null);
         setBookingDateMin();
         clearErrors();
         setMailtoHref();

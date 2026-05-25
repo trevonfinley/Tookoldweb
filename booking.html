@@ -11,7 +11,7 @@
   <a class="skip-link" href="#main-content">Skip to main content</a>
   <header class="site-header">
     <a class="brand" href="index.html" aria-label="DJ Too Kold home">
-      <span class="brand-mark" aria-hidden="true">TK</span>
+      <span class="brand-mark" aria-hidden="true"><img src="assets/images/dj-too-kold-logo.jpeg" alt="" width="48" height="48"></span>
       <span>DJ Too Kold</span>
     </a>
     <button class="menu-toggle" type="button" aria-label="Open menu" aria-controls="site-nav" aria-expanded="false">
@@ -39,6 +39,65 @@
       <p>Use this form to request availability for Birmingham, Central Alabama, or nearby events. Include the date, city, venue, event type, guest count, and anything the music absolutely needs to do.</p>
     </section>
 
+    <section class="section-inner availability-checker" data-reveal aria-labelledby="availability-check-title">
+      <div>
+        <p class="eyebrow">Availability checker</p>
+        <h2 id="availability-check-title">Check the event window first.</h2>
+        <p>Get a quick public estimate before sending the full inquiry. Availability is not guaranteed until DJ Too Kold approves the booking and the deposit and contract steps are complete.</p>
+      </div>
+
+      <form class="availability-check-form" data-availability-checker novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="check-event-date">Event date <span aria-hidden="true">*</span></label>
+            <input id="check-event-date" name="event-date" type="date" required>
+            <small class="error" data-check-error-for="eventDate"></small>
+          </div>
+          <div class="form-group">
+            <label for="check-event-type">Event type <span aria-hidden="true">*</span></label>
+            <select id="check-event-type" name="event-type" required>
+              <option value="">Select one</option>
+              <option>Wedding</option>
+              <option>Prom or school event</option>
+              <option>Nightlife or club event</option>
+              <option>Private party</option>
+              <option>Corporate event</option>
+              <option>Restaurant or lounge</option>
+              <option>Festival or concert</option>
+              <option>Social or community event</option>
+              <option>Other</option>
+            </select>
+            <small class="error" data-check-error-for="eventType"></small>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="check-start-time">Start time <span aria-hidden="true">*</span></label>
+            <input id="check-start-time" name="start-time" type="time" required>
+            <small class="error" data-check-error-for="startTime"></small>
+          </div>
+          <div class="form-group">
+            <label for="check-end-time">End time <span aria-hidden="true">*</span></label>
+            <input id="check-end-time" name="end-time" type="time" required>
+            <small class="error" data-check-error-for="endTime"></small>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="check-city-state">City/state</label>
+          <input id="check-city-state" name="city-state" type="text" autocomplete="address-level2" placeholder="Birmingham, AL">
+        </div>
+
+        <div class="availability-actions">
+          <button type="submit" class="btn-primary">Check Availability</button>
+          <button type="button" class="btn-secondary" data-availability-continue hidden>Continue to Inquiry</button>
+        </div>
+
+        <div class="availability-check-result" data-availability-result aria-live="polite" hidden></div>
+      </form>
+    </section>
+
     <section class="section-inner form-layout" data-reveal>
       <div>
         <p class="eyebrow">What happens next</p>
@@ -61,6 +120,8 @@
 
       <form class="inquiry-form booking-form" id="booking-form" name="booking" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate>
         <input type="hidden" name="form-name" value="booking">
+        <input type="hidden" id="availability-status-at-submission" name="availability-status-at-submission">
+        <input type="hidden" id="availability-checked-at" name="availability-checked-at">
         <p class="hidden">
           <label>Do not fill this out if you are human: <input name="bot-field"></label>
         </p>
@@ -238,7 +299,7 @@
     <div class="footer-inner">
       <div>
         <a class="brand footer-brand" href="index.html" aria-label="DJ Too Kold home">
-          <span class="brand-mark" aria-hidden="true">TK</span>
+          <span class="brand-mark" aria-hidden="true"><img src="assets/images/dj-too-kold-logo.jpeg" alt="" width="48" height="48"></span>
           <span>DJ Too Kold</span>
         </a>
         <p>Premium DJ entertainment for weddings, parties, nightlife, schools, corporate events, and social celebrations.</p>

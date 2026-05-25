@@ -1,6 +1,8 @@
 (function () {
   const heroImage = 'assets/images/dj-too-kold-hero-1400.jpg';
   const thumbImage = 'assets/images/dj-too-kold-thumb-720.jpg';
+  const logoImage = 'assets/images/dj-too-kold-logo-832.jpg';
+  const logoThumbImage = 'assets/images/dj-too-kold-logo-thumb-520.jpg';
 
   const mediaItems = [
     {
@@ -128,6 +130,27 @@
       provider: '',
       altText: 'DJ Too Kold brand image with blue stage lighting',
       layout: 'wide'
+    },
+    {
+      id: 'too-kold-snowman-logo',
+      title: 'Too Kold Snowman Logo',
+      description: 'DJ Too Kold logo artwork with the snowman mascot and turntables.',
+      mediaType: 'promo_images',
+      fileUrl: logoImage,
+      thumbnailUrl: logoThumbImage,
+      eventDate: '',
+      venue: 'Project Neo media kit',
+      tags: ['brand', 'logo', 'promo'],
+      featured: false,
+      displayOrder: 70,
+      sourceType: 'local',
+      storageBucket: 'public-media',
+      storagePath: 'promo/dj-too-kold-logo-832.jpg',
+      externalUrl: '',
+      embedUrl: '',
+      provider: '',
+      altText: 'DJ Too Kold snowman mascot logo with headphones and turntables',
+      layout: 'tall'
     }
   ];
 

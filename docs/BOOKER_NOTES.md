@@ -35,6 +35,7 @@ Keep new sections aligned to these classes so the site stays consistent on mobil
 
 When reviewing a public booking inquiry, prioritize:
 
+- Availability checker status shown at submission, if present.
 - Event date and location.
 - Event type.
 - Guest count.
@@ -47,11 +48,14 @@ When reviewing a public booking inquiry, prioritize:
 
 If the lead is missing key details, reply with the smallest number of questions needed to determine fit and availability.
 
+The public availability checker is an estimate only. Treat `available`, `pending`, `unavailable`, and `contact_required` as review signals, not as booking confirmation.
+
 ## Content To Replace Before Launch
 
 Replace or confirm these before the public launch:
 
 - Public booking/contact email confirmed as `djtookold@gmail.com` in config.
+- Official DJ Too Kold logo is stored at `assets/images/dj-too-kold-logo.jpeg`.
 - Real client testimonials.
 - Real gallery photos and alt text.
 - Real mix embeds or audio files.

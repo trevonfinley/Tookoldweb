@@ -45,6 +45,7 @@ People planning weddings, private parties, proms, school events, corporate event
 ## Trust Builders
 
 - Add real event photos or short performance clips as they become available.
+- Use `assets/images/dj-too-kold-logo.jpeg` as the official DJ Too Kold logo.
 - Replace placeholder testimonials with approved client quotes.
 - Replace mix placeholders with SoundCloud, Mixcloud, Spotify, YouTube, or native audio embeds.
 - Add social links once official public profiles are confirmed.

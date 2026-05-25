@@ -102,6 +102,7 @@ Public routes:
 - `GET /media`
 - `GET /mixes`
 - `GET /service-packages`
+- `POST /availability-check`
 - `GET /availability`
 
 Admin routes require a Supabase Auth bearer token for an active `owner` or `admin` user:

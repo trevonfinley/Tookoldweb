@@ -111,11 +111,49 @@ Creates a booking inquiry from the public booking form.
   "musicPreferences": "Hip-hop, R&B, clean edits, must-play songs...",
   "budgetRange": "$1,200-$1,800",
   "heardAbout": "Referral",
-  "additionalNotes": "Load-in starts at 4 PM."
+  "additionalNotes": "Load-in starts at 4 PM.",
+  "availabilityStatusAtSubmission": "available",
+  "availabilityCheckedAt": "2026-05-24T18:30:00.000Z"
 }
 ```
 
 Required fields are client name, email, event type, event date, city/state, and estimated guest count. The API accepts camelCase, snake_case, and HTML form-style hyphenated field names for the booking payload, stores a derived `full_name`, splits first/last name when possible for admin review, and builds the required internal `message` summary when the public form does not send one.
+
+When event date, start time, and end time are present, booking inquiry creation stores the public availability snapshot in `requested_start_at`, `requested_end_at`, `availability_status_at_submission`, and `availability_checked_at`. If the public checker already showed one of the allowed public statuses, the inquiry preserves that shown status and checked timestamp; otherwise the Edge Function rechecks availability during submission. This is a historical lead-submission snapshot, not a final booking guarantee.
+
+### `POST /availability-check`
+
+Checks a requested event window against confirmed events and `availability_blocks`, then returns a safe public status only. The alias `POST /availability/check` is also supported for Booker integration.
+
+```json
+{
+  "event_date": "2026-09-12",
+  "start_time": "18:00",
+  "end_time": "23:00",
+  "event_type": "Wedding",
+  "timezone": "America/Chicago"
+}
+```
+
+Response:
+
+```json
+{
+  "status": "available",
+  "message": "This date appears available. Submit your inquiry to start the booking process.",
+  "checked_at": "2026-05-24T18:30:00.000Z"
+}
+```
+
+Public statuses are `available`, `pending`, `unavailable`, and `contact_required`.
+
+- `confirmed` event overlap returns `unavailable`.
+- `personal_block`, `travel_block`, `unavailable`, or `booked` block overlap returns `unavailable`.
+- `hold` block overlap returns `pending`.
+- `maintenance_day` or `setup_day` block overlap returns `contact_required`.
+- Missing or unclear date/time input returns `contact_required`.
+
+This route never returns client names, venue names, event titles, block titles, internal notes, raw block reasons, invoice/payment details, or private event metadata.
 
 ### `POST /contact-messages`
 
@@ -158,6 +196,28 @@ Returns sanitized public availability holds without client, venue, internal note
   }
 ]
 ```
+
+## Availability Handoff Notes
+
+Booker:
+- Call `POST /availability-check` from the booking form once date, start time, and end time are present.
+- Show only the returned `message`; do not infer or display private conflict details.
+- Keep the inquiry path open for every status, including `unavailable`.
+
+Mission Control:
+- Own admin CRUD for `availability_blocks`.
+- Keep `reason`, `internal_notes`, block titles, and operational block types admin-only.
+- Use the booking inquiry availability snapshot to understand what the visitor saw at submission time.
+
+Shield:
+- Review public availability serialization before launch.
+- Confirm anonymous users cannot query `availability_blocks`, private `events`, `clients`, `invoices`, `payments`, or private notes directly.
+- Treat `reason_code` as public-safe only; do not add private labels or raw block reasons to it.
+
+Sync:
+- Populate `events.start_at` and `events.end_at` for confirmed synced bookings.
+- Sync blackout windows that are not client events into `availability_blocks`.
+- Avoid putting client names, venue names, or sensitive external calendar text into public-facing block fields.
 
 ## Client Portal Routes
 
@@ -274,6 +334,28 @@ When a new `pending`, `confirmed`, or `hold` event overlaps an existing booking 
 ### `GET /admin/events`
 
 Returns protected event records with client and venue context, visibility, internal notes, calendar sync ID, and `conflict_warnings`. Supports `?limit=50`, optional `?status=confirmed`, and optional `?from=YYYY-MM-DD&to=YYYY-MM-DD`.
+
+### `GET /admin/availability-blocks`
+
+Returns protected availability blocks for Mission Control with block title, type, start/end timestamps, all-day flag, public message, internal notes, and conflict warnings. Supports `?limit=50` and optional `?type=hold`.
+
+### `POST /admin/availability-blocks`
+
+Creates an admin-only availability block. Block titles and internal notes stay protected behind `requireAdmin`; only `public_message` is intended for public availability responses.
+
+```json
+{
+  "title": "Travel to Chicago",
+  "blockType": "travel_block",
+  "startAt": "2026-09-11T14:00:00.000Z",
+  "endAt": "2026-09-12T16:00:00.000Z",
+  "allDay": false,
+  "publicMessage": "Limited availability around this date.",
+  "internalNotes": "Flight and hotel hold."
+}
+```
+
+Allowed block types are `hold`, `booked`, `unavailable`, `personal_block`, `travel_block`, `maintenance_day`, and `setup_day`. The response includes `conflict_warnings` when the block overlaps an existing event or availability block.
 
 ### `PATCH /admin/booking-inquiries/:id/status`
 

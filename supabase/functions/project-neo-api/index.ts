@@ -71,6 +71,28 @@ const TASK_STATUSES = new Set(["todo", "in_progress", "waiting", "done", "cancel
 const PAYMENT_TYPES = new Set(["deposit", "balance", "refund", "other"]);
 const CLIENT_OPEN_EVENT_STATUSES = new Set(["pending", "confirmed", "hold", "tentative"]);
 const ADMIN_ROLES = new Set(["owner", "admin"]);
+const DEFAULT_AVAILABILITY_TIMEZONE = Deno.env.get("PROJECT_NEO_DEFAULT_TIMEZONE") || "America/Chicago";
+const PUBLIC_AVAILABILITY_STATUSES = new Set(["available", "pending", "unavailable", "contact_required"]);
+const AVAILABILITY_BLOCK_TYPES = new Set([
+  "hold",
+  "booked",
+  "unavailable",
+  "personal_block",
+  "travel_block",
+  "maintenance_day",
+  "setup_day",
+]);
+
+const PUBLIC_AVAILABILITY_MESSAGES: Record<string, string> = {
+  available: "This date appears available. Submit your inquiry to start the booking process.",
+  pending: "This date may have another request pending. Submit your inquiry and we'll confirm availability.",
+  unavailable: "This date is currently unavailable. You can still contact us about alternate times.",
+  contact_required: "This date needs manual review. Submit your inquiry and we'll follow up.",
+};
+
+const UNAVAILABLE_BLOCK_TYPES = new Set(["booked", "personal_block", "travel_block", "unavailable"]);
+const PENDING_BLOCK_TYPES = new Set(["hold"]);
+const CONTACT_REQUIRED_BLOCK_TYPES = new Set(["maintenance_day", "setup_day"]);
 
 const CARD_DATA_KEYS = new Set([
   "cardNumber",
@@ -531,6 +553,158 @@ function timeRange(startTime: unknown, endTime: unknown) {
   return { start, end };
 }
 
+function publicAvailabilityResult(status: string, reasonCode?: string) {
+  const safeStatus = PUBLIC_AVAILABILITY_STATUSES.has(status) ? status : "contact_required";
+  const result: Record<string, string> = {
+    status: safeStatus,
+    message: PUBLIC_AVAILABILITY_MESSAGES[safeStatus] ?? PUBLIC_AVAILABILITY_MESSAGES.contact_required,
+    checked_at: new Date().toISOString(),
+  };
+
+  if (reasonCode) result.reason_code = reasonCode;
+  return result;
+}
+
+function submittedAvailabilitySnapshotFromBody(body: Payload) {
+  const status = optionalString(body, [
+    "availabilityStatusAtSubmission",
+    "availability_status_at_submission",
+    "availability-status-at-submission",
+    "availabilityStatus",
+    "availability_status",
+  ], 32);
+
+  if (!status || !PUBLIC_AVAILABILITY_STATUSES.has(status)) return null;
+
+  const checkedAt = optionalString(body, [
+    "availabilityCheckedAt",
+    "availability_checked_at",
+    "availability-checked-at",
+    "availabilityCheckedAtSubmission",
+    "availability_checked_at_submission",
+  ], 80);
+  const parsedCheckedAt = checkedAt ? Date.parse(checkedAt) : NaN;
+
+  return {
+    status,
+    checked_at: Number.isNaN(parsedCheckedAt) ? new Date().toISOString() : new Date(parsedCheckedAt).toISOString(),
+  };
+}
+
+function validateTimeZone(timezone: string) {
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(new Date());
+    return timezone;
+  } catch {
+    return null;
+  }
+}
+
+function timeZoneOffsetMs(date: Date, timezone: string) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour12: false,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const parts = Object.fromEntries(
+    formatter
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+  const asUtc = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second),
+  );
+
+  return asUtc - date.getTime();
+}
+
+function zonedDateTimeToUtcIso(eventDate: string, eventTime: string, timezone: string) {
+  const [year, month, day] = eventDate.split("-").map((part) => Number.parseInt(part, 10));
+  const [hour, minute, second = 0] = eventTime.split(":").map((part) => Number.parseInt(part, 10));
+  const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  const firstOffset = timeZoneOffsetMs(utcGuess, timezone);
+  const firstUtc = new Date(utcGuess.getTime() - firstOffset);
+  const secondOffset = timeZoneOffsetMs(firstUtc, timezone);
+
+  return new Date(utcGuess.getTime() - secondOffset).toISOString();
+}
+
+function availabilityInputFromBody(body: Payload) {
+  try {
+    const eventDate = optionalDate(body, ["event_date", "eventDate", "event-date"], "Event date");
+    const startTime = optionalTime(body, ["start_time", "startTime", "start-time"], "Start time");
+    const endTime = optionalTime(body, ["end_time", "endTime", "end-time"], "End time");
+    const eventType = optionalString(body, ["event_type", "eventType", "event-type"], 120);
+    const timezoneInput = optionalString(body, ["timezone", "time_zone", "timeZone"], 80) ?? DEFAULT_AVAILABILITY_TIMEZONE;
+    const timezone = validateTimeZone(timezoneInput);
+
+    if (!eventDate || !startTime || !endTime) {
+      return {
+        ok: false,
+        result: publicAvailabilityResult("contact_required", "incomplete_request"),
+      };
+    }
+
+    if (!timezone) {
+      return {
+        ok: false,
+        result: publicAvailabilityResult("contact_required", "invalid_timezone"),
+      };
+    }
+
+    const startMinutes = minutesFromTime(startTime);
+    const endMinutes = minutesFromTime(endTime);
+    if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+      return {
+        ok: false,
+        result: publicAvailabilityResult("contact_required", "unclear_time_range"),
+      };
+    }
+
+    const startAt = zonedDateTimeToUtcIso(eventDate, startTime, timezone);
+    const endAt = zonedDateTimeToUtcIso(eventDate, endTime, timezone);
+    if (Date.parse(endAt) <= Date.parse(startAt)) {
+      return {
+        ok: false,
+        result: publicAvailabilityResult("contact_required", "unclear_time_range"),
+      };
+    }
+
+    return {
+      ok: true,
+      input: {
+        eventDate,
+        startTime,
+        endTime,
+        eventType,
+        timezone,
+        startAt,
+        endAt,
+      },
+    };
+  } catch (error) {
+    if (error instanceof ApiError && error.code === "validation_error") {
+      return {
+        ok: false,
+        result: publicAvailabilityResult("contact_required", "invalid_request"),
+      };
+    }
+    throw error;
+  }
+}
+
 function eventConflictSummary(event: Record<string, unknown>) {
   const client = Array.isArray(event.clients) ? event.clients[0] : event.clients;
 
@@ -722,6 +896,40 @@ function eventPayload(body: Payload) {
     setup_notes: optionalString(body, ["setupNotes", "setup_notes"], 4000),
     timeline_notes: optionalString(body, ["timelineNotes", "timeline_notes"], 4000),
     calendar_sync_id: optionalString(body, ["calendarSyncId", "calendar_sync_id"], 255),
+  };
+}
+
+function availabilityStatusForBlockType(blockType: string) {
+  if (blockType === "hold") return "pending";
+  if (blockType === "maintenance_day" || blockType === "setup_day") return "contact_required";
+  return "unavailable";
+}
+
+function availabilityBlockPayload(body: Payload, adminUserId: string) {
+  const blockType = requiredEnum(
+    body,
+    ["blockType", "block_type", "type"],
+    AVAILABILITY_BLOCK_TYPES,
+    "Availability block type",
+  );
+  const startAt = optionalIsoDateTime(body, ["startAt", "start_at"], "Start date/time");
+  const endAt = optionalIsoDateTime(body, ["endAt", "end_at"], "End date/time");
+  if (!startAt) throw new ApiError(400, "validation_error", "Start date/time is required.", { field: "startAt" });
+  if (!endAt) throw new ApiError(400, "validation_error", "End date/time is required.", { field: "endAt" });
+  if (Date.parse(endAt) <= Date.parse(startAt)) {
+    throw new ApiError(400, "validation_error", "End date/time must be after start date/time.", { field: "endAt" });
+  }
+
+  return {
+    title: requiredString(body, ["title"], "Title", 180),
+    block_type: blockType,
+    status: availabilityStatusForBlockType(blockType),
+    start_at: startAt,
+    end_at: endAt,
+    all_day: optionalBoolean(body, ["allDay", "all_day"]) ?? false,
+    public_message: optionalString(body, ["publicMessage", "public_message"], 500),
+    internal_notes: optionalString(body, ["internalNotes", "internal_notes"], 4000),
+    created_by: adminUserId,
   };
 }
 
@@ -955,11 +1163,13 @@ async function validatePaymentAgainstInvoice(supabase: SupabaseClient, payment: 
 }
 
 async function submitBookingInquiry(request: Request, supabase: SupabaseClient) {
-  const payload = bookingInquiryPayload(await readJson(request));
+  const body = await readJson(request);
+  const payload = bookingInquiryPayload(body);
+  const availabilitySnapshot = await availabilitySnapshotForBooking(supabase, body);
   const { data, error } = await supabase
     .from("booking_inquiries")
-    .insert(payload)
-    .select("id, status, created_at")
+    .insert({ ...payload, ...availabilitySnapshot })
+    .select("id, status, availability_status_at_submission, availability_checked_at, created_at")
     .single();
 
   if (error) throw new ApiError(500, "booking_inquiry_create_failed", "Could not submit booking inquiry.", error.message);
@@ -1562,6 +1772,214 @@ async function fetchAdminEvents(request: Request, supabase: SupabaseClient) {
   return ok(request, annotateEventConflicts((data ?? []) as Record<string, unknown>[]));
 }
 
+function isoWindowsOverlap(startA: unknown, endA: unknown, startB: unknown, endB: unknown) {
+  const aStart = Date.parse(String(startA || ""));
+  const aEnd = Date.parse(String(endA || ""));
+  const bStart = Date.parse(String(startB || ""));
+  const bEnd = Date.parse(String(endB || ""));
+  if ([aStart, aEnd, bStart, bEnd].some((value) => Number.isNaN(value))) return false;
+  return aStart < bEnd && bStart < aEnd;
+}
+
+function availabilityConflictSummary(type: string, record: Record<string, unknown>) {
+  return {
+    id: String(record.id || ""),
+    type,
+    title: String(record.title || (type === "event" ? "Event" : "Availability block")),
+    status: String(record.status || record.block_type || ""),
+    startAt: record.start_at ? String(record.start_at) : null,
+    endAt: record.end_at ? String(record.end_at) : null,
+    eventDate: record.event_date ? String(record.event_date) : null,
+    startTime: record.start_time ? String(record.start_time) : null,
+    endTime: record.end_time ? String(record.end_time) : null,
+  };
+}
+
+function zonedIsoParts(value: unknown) {
+  const date = new Date(String(value || ""));
+  if (Number.isNaN(date.getTime())) return null;
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: DEFAULT_AVAILABILITY_TIMEZONE,
+    hour12: false,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const parts = Object.fromEntries(
+    formatter
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${parts.hour}:${parts.minute}`,
+  };
+}
+
+function legacyEventOverlapsBlock(event: Record<string, unknown>, block: Record<string, unknown>) {
+  if (!event.event_date) return false;
+  const blockStart = zonedIsoParts(block.start_at);
+  const blockEnd = zonedIsoParts(block.end_at);
+  if (!blockStart || !blockEnd) return false;
+  const startDate = blockStart.date;
+  const endDate = blockEnd.date;
+  const eventDate = String(event.event_date);
+  if (eventDate < startDate || eventDate > endDate) return false;
+  if (block.all_day) return true;
+
+  const blockStartTime = eventDate === startDate ? blockStart.time : "00:00";
+  const blockEndTime = eventDate === endDate ? blockEnd.time : "23:59";
+  return eventTimesOverlap(blockStartTime, blockEndTime, event.start_time, event.end_time);
+}
+
+async function findAvailabilityBlockConflicts(
+  supabase: SupabaseClient,
+  block: Record<string, unknown>,
+  ignoreBlockId?: string,
+) {
+  const startAt = String(block.start_at || "");
+  const endAt = String(block.end_at || "");
+  if (!startAt || !endAt) return [];
+
+  const [eventsResult, blocksResult] = await Promise.all([
+    supabase
+      .from("events")
+      .select(`
+        id,
+        title,
+        event_date,
+        start_time,
+        end_time,
+        start_at,
+        end_at,
+        status
+      `)
+      .in("status", [...EVENT_BLOCKING_STATUSES])
+      .limit(150),
+    (() => {
+      let query = supabase
+        .from("availability_blocks")
+        .select("id, title, block_type, status, start_at, end_at, all_day")
+        .lt("start_at", endAt)
+        .gt("end_at", startAt)
+        .limit(150);
+      if (ignoreBlockId) query = query.neq("id", ignoreBlockId);
+      return query;
+    })(),
+  ]);
+
+  const failures = [eventsResult.error?.message, blocksResult.error?.message].filter(Boolean);
+  if (failures.length > 0) {
+    throw new ApiError(500, "availability_conflict_check_failed", "Could not check availability conflicts.", failures.join("; "));
+  }
+
+  const seen = new Set<string>();
+  const eventConflicts = ((eventsResult.data ?? []) as Record<string, unknown>[])
+    .filter((event) => {
+      if (event.start_at && event.end_at) return isoWindowsOverlap(startAt, endAt, event.start_at, event.end_at);
+      return legacyEventOverlapsBlock(event, block);
+    })
+    .filter((event) => {
+      const id = String(event.id || "");
+      if (!id || seen.has(`event:${id}`)) return false;
+      seen.add(`event:${id}`);
+      return true;
+    })
+    .map((event) => availabilityConflictSummary("event", event));
+
+  const blockConflicts = ((blocksResult.data ?? []) as Record<string, unknown>[])
+    .filter((candidate) => isoWindowsOverlap(startAt, endAt, candidate.start_at, candidate.end_at))
+    .map((candidate) => availabilityConflictSummary("availability_block", candidate));
+
+  return [...eventConflicts, ...blockConflicts];
+}
+
+async function fetchAdminAvailabilityBlocks(request: Request, supabase: SupabaseClient) {
+  const url = new URL(request.url);
+  const limit = numericLimit(url, 50, 100);
+  const typeParam = url.searchParams.get("type") ?? url.searchParams.get("status");
+  if (typeParam && typeParam !== "all" && !AVAILABILITY_BLOCK_TYPES.has(typeParam)) {
+    throw new ApiError(400, "validation_error", "Availability block type is not supported.", {
+      field: url.searchParams.has("type") ? "type" : "status",
+      allowed: [...AVAILABILITY_BLOCK_TYPES],
+    });
+  }
+  const type = typeParam && typeParam !== "all" ? typeParam : null;
+  let query = supabase
+    .from("availability_blocks")
+    .select(`
+      id,
+      title,
+      block_type,
+      status,
+      start_at,
+      end_at,
+      all_day,
+      public_message,
+      internal_notes,
+      reason,
+      created_at,
+      updated_at
+    `);
+
+  if (type) query = query.eq("block_type", type);
+
+  const { data, error } = await query
+    .order("start_at", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    throw new ApiError(500, "availability_blocks_fetch_failed", "Could not fetch availability blocks.", error.message);
+  }
+
+  const blocks = (data ?? []) as Record<string, unknown>[];
+  const annotated = await Promise.all(blocks.map(async (block) => ({
+    ...block,
+    conflict_warnings: await findAvailabilityBlockConflicts(supabase, block, String(block.id || "")),
+  })));
+
+  return ok(request, annotated);
+}
+
+async function createAvailabilityBlockRecord(
+  request: Request,
+  supabase: SupabaseClient,
+  admin: Awaited<ReturnType<typeof requireAdmin>>,
+) {
+  const payload = availabilityBlockPayload(await readJson(request), String(admin.projectNeoUser.id));
+  const conflictWarnings = await findAvailabilityBlockConflicts(supabase, payload);
+
+  const { data, error } = await supabase
+    .from("availability_blocks")
+    .insert(payload)
+    .select(`
+      id,
+      title,
+      block_type,
+      status,
+      start_at,
+      end_at,
+      all_day,
+      public_message,
+      internal_notes,
+      reason,
+      created_at,
+      updated_at
+    `)
+    .single();
+
+  if (error) {
+    throw new ApiError(500, "availability_block_create_failed", "Could not create availability block.", error.message);
+  }
+
+  return ok(request, { ...data, conflict_warnings: conflictWarnings }, 201);
+}
+
 async function updateBookingStatus(request: Request, supabase: SupabaseClient, bookingInquiryId: string) {
   const body = await readJson(request);
   const status = requiredEnum(body, ["status"], BOOKING_STATUSES, "Booking status");
@@ -1878,6 +2296,144 @@ async function fetchUpcomingEvents(request: Request, supabase: SupabaseClient) {
   return ok(request, data ?? []);
 }
 
+async function evaluatePublicAvailability(
+  supabase: SupabaseClient,
+  input: {
+    eventDate: string;
+    startTime: string;
+    endTime: string;
+    eventType: string | null;
+    timezone: string;
+    startAt: string;
+    endAt: string;
+  },
+) {
+  try {
+    const { data: timedEvents, error: timedEventsError } = await supabase
+      .from("events")
+      .select("id")
+      .eq("status", "confirmed")
+      .lt("start_at", input.endAt)
+      .gt("end_at", input.startAt)
+      .limit(1);
+
+    if (timedEventsError) throw timedEventsError;
+    if ((timedEvents ?? []).length > 0) {
+      return publicAvailabilityResult("unavailable", "booked_event_conflict");
+    }
+
+    const { data: legacyEvents, error: legacyEventsError } = await supabase
+      .from("events")
+      .select("id, start_time, end_time")
+      .eq("event_date", input.eventDate)
+      .eq("status", "confirmed")
+      .limit(100);
+
+    if (legacyEventsError) throw legacyEventsError;
+    const hasLegacyConflict = (legacyEvents ?? []).some((event) => {
+      return eventTimesOverlap(input.startTime, input.endTime, event.start_time, event.end_time);
+    });
+
+    if (hasLegacyConflict) {
+      return publicAvailabilityResult("unavailable", "booked_event_conflict");
+    }
+
+    const { data: blocks, error: blocksError } = await supabase
+      .from("availability_blocks")
+      .select("id, block_type, status, start_at, end_at, all_day")
+      .lt("start_at", input.endAt)
+      .gt("end_at", input.startAt)
+      .limit(100);
+
+    if (blocksError) throw blocksError;
+
+    const overlappingBlocks = blocks ?? [];
+    if (
+      overlappingBlocks.some((block) => {
+        const blockType = String(block.block_type || "");
+        return UNAVAILABLE_BLOCK_TYPES.has(blockType);
+      })
+    ) {
+      return publicAvailabilityResult("unavailable", "availability_block_unavailable");
+    }
+
+    if (
+      overlappingBlocks.some((block) => {
+        const blockType = String(block.block_type || "");
+        return PENDING_BLOCK_TYPES.has(blockType);
+      })
+    ) {
+      return publicAvailabilityResult("pending", "availability_hold");
+    }
+
+    if (
+      overlappingBlocks.some((block) => {
+        const blockType = String(block.block_type || "");
+        return CONTACT_REQUIRED_BLOCK_TYPES.has(blockType);
+      })
+    ) {
+      return publicAvailabilityResult("contact_required", "manual_review_block");
+    }
+
+    if (overlappingBlocks.some((block) => String(block.status || "") === "unavailable")) {
+      return publicAvailabilityResult("unavailable", "availability_block_unavailable");
+    }
+
+    if (overlappingBlocks.some((block) => String(block.status || "") === "pending")) {
+      return publicAvailabilityResult("pending", "availability_hold");
+    }
+
+    if (overlappingBlocks.some((block) => String(block.status || "") === "contact_required")) {
+      return publicAvailabilityResult("contact_required", "manual_review_block");
+    }
+
+    return publicAvailabilityResult("available");
+  } catch (error) {
+    console.error("Public availability check failed", error);
+    return publicAvailabilityResult("contact_required", "availability_check_failed");
+  }
+}
+
+async function availabilitySnapshotForBooking(supabase: SupabaseClient, body: Payload) {
+  const parsed = availabilityInputFromBody(body);
+  if (!parsed.ok) {
+    return {
+      requested_start_at: null,
+      requested_end_at: null,
+      availability_status_at_submission: parsed.result.status,
+      availability_checked_at: parsed.result.checked_at,
+    };
+  }
+
+  const submittedSnapshot = submittedAvailabilitySnapshotFromBody(body);
+  if (submittedSnapshot) {
+    return {
+      requested_start_at: parsed.input.startAt,
+      requested_end_at: parsed.input.endAt,
+      availability_status_at_submission: submittedSnapshot.status,
+      availability_checked_at: submittedSnapshot.checked_at,
+    };
+  }
+
+  const result = await evaluatePublicAvailability(supabase, parsed.input);
+  return {
+    requested_start_at: parsed.input.startAt,
+    requested_end_at: parsed.input.endAt,
+    availability_status_at_submission: result.status,
+    availability_checked_at: result.checked_at,
+  };
+}
+
+async function checkPublicAvailability(request: Request, supabase: SupabaseClient) {
+  const body = await readJson(request);
+  const parsed = availabilityInputFromBody(body);
+
+  if (!parsed.ok) return ok(request, parsed.result);
+
+  const result = await evaluatePublicAvailability(supabase, parsed.input);
+  return ok(request, result);
+}
+
 async function fetchPublicAvailability(request: Request, supabase: SupabaseClient) {
   const url = new URL(request.url);
   const limit = numericLimit(url, 20, 100);
@@ -1992,6 +2548,10 @@ async function fetchAdminBookingInquiries(request: Request, supabase: SupabaseCl
       event_date,
       start_time,
       end_time,
+      requested_start_at,
+      requested_end_at,
+      availability_status_at_submission,
+      availability_checked_at,
       event_type,
       venue_name,
       venue_address,
@@ -2174,6 +2734,10 @@ async function routeRequest(request: Request) {
     return fetchServicePackages(request, supabase);
   }
 
+  if (request.method === "POST" && (path === "/availability-check" || path === "/availability/check")) {
+    return checkPublicAvailability(request, supabase);
+  }
+
   if (request.method === "GET" && path === "/availability") {
     return fetchPublicAvailability(request, supabase);
   }
@@ -2233,6 +2797,14 @@ async function routeRequest(request: Request) {
 
     if (request.method === "POST" && path === "/admin/events") {
       return createEventRecord(request, supabase);
+    }
+
+    if (request.method === "GET" && path === "/admin/availability-blocks") {
+      return fetchAdminAvailabilityBlocks(request, supabase);
+    }
+
+    if (request.method === "POST" && path === "/admin/availability-blocks") {
+      return createAvailabilityBlockRecord(request, supabase, admin);
     }
 
     if (request.method === "GET" && path === "/admin/events/upcoming") {

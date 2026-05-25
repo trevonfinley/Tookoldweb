@@ -11,6 +11,8 @@
   const statusEl = document.querySelector("[data-admin-status]");
   let supabaseClient = null;
 
+  const BLOCKING_EVENT_STATUSES = new Set(["pending", "confirmed", "hold"]);
+
   const state = {
     session: null,
     profile: null,
@@ -26,6 +28,7 @@
     ["booking-inquiries", "/admin/booking-inquiries?limit=50"],
     ["clients", "/admin/clients?limit=50"],
     ["events", "/admin/events?limit=75"],
+    ["availability", "/admin/availability-blocks?limit=75"],
     ["invoices", "/admin/invoices?limit=50"],
     ["payments", "/admin/payments?limit=50"],
     ["venues", "/admin/venues?limit=50"],
@@ -63,6 +66,7 @@
         ["Event", (item) => [item.event_type, item.guest_count ? `${formatNumber(item.guest_count)} guests` : ""].filter(Boolean).join(" / ") || "Details pending"],
         ["Date", (item) => [formatDate(item.event_date), formatTimeRange(item.start_time, item.end_time)].filter(Boolean).join(" / ") || "TBD"],
         ["Venue", (item) => item.venue_name || item.city_state || item.location || "TBD"],
+        ["Availability", (item) => createBadge(item.availability_status_at_submission || "not_checked")],
         ["Status", (item) => createBadge(item.status || "new")],
       ],
       details: (item) => [
@@ -76,6 +80,9 @@
         ["Location", item.city_state || item.location],
         ["Guests", item.guest_count ? formatNumber(item.guest_count) : ""],
         ["Setup", formatStatus(item.indoor_outdoor)],
+        ["Requested window", formatRequestedWindow(item)],
+        ["Availability at submission", createBadge(item.availability_status_at_submission || "not_checked")],
+        ["Availability checked", formatDateTime(item.availability_checked_at)],
         ["Budget", item.budget_range],
         ["Music", item.music_preferences],
         ["Notes", item.additional_notes || item.message],
@@ -166,6 +173,47 @@
           ["Internal notes", item.internal_notes],
         ];
       },
+    },
+    availability: {
+      empty: "No availability blocks found.",
+      filters: [
+        ["all", "All block types"],
+        ["hold", "Hold"],
+        ["unavailable", "Unavailable"],
+        ["personal_block", "Personal block"],
+        ["travel_block", "Travel block"],
+        ["setup_day", "Setup day"],
+        ["maintenance_day", "Maintenance day"],
+      ],
+      status: (item) => item.block_type || item.status || "unavailable",
+      matchStatus: (item, value) => value === "all" || item.block_type === value,
+      search: (item) => [
+        item.title,
+        item.block_type,
+        item.status,
+        item.public_message,
+        item.internal_notes,
+        item.reason,
+        formatAvailabilityWindow(item, "block"),
+      ],
+      title: (item) => item.title || "Availability block",
+      subtitle: (item) => formatAvailabilityWindow(item, "block"),
+      columns: [
+        ["Block", (item) => item.title || "Availability block"],
+        ["Window", (item) => formatAvailabilityWindow(item, "block") || "Not set"],
+        ["Type", (item) => createBadge(item.block_type || item.status || "unavailable")],
+        ["Public Message", (item) => item.public_message || "Private block"],
+        ["Conflict", (item) => createConflictBadge(getAvailabilityConflicts("block", item))],
+      ],
+      details: (item) => [
+        ["Type", createBadge(item.block_type || item.status || "unavailable")],
+        ["Window", formatAvailabilityWindow(item, "block")],
+        ["All day", item.all_day ? "Yes" : "No"],
+        ["Public message", item.public_message],
+        ["Internal notes", item.internal_notes],
+        ["Created", formatDateTime(item.created_at)],
+        ["Conflicts", createConflictList(getAvailabilityConflicts("block", item))],
+      ],
     },
     invoices: {
       empty: "No invoices found.",
@@ -381,13 +429,18 @@
     return data.session;
   }
 
-  async function adminFetch(path, session) {
-    if (auth?.apiFetch) return auth.apiFetch(path, session);
+  async function adminFetch(path, session, options = {}) {
+    if (auth?.apiFetch && !options.method && !options.body) return auth.apiFetch(path, session);
+    const headers = {
+      "Accept": "application/json",
+      "Authorization": `Bearer ${session.access_token}`,
+    };
+    if (options.body) headers["Content-Type"] = "application/json";
+
     const response = await fetch(`${apiBaseUrl}${path}`, {
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${session.access_token}`,
-      },
+      method: options.method || "GET",
+      headers,
+      body: options.body ? JSON.stringify(options.body) : undefined,
     });
     const payload = await response.json().catch(() => null);
 
@@ -532,6 +585,7 @@
 
     setupNavigation();
     setupRecordControls();
+    setupAvailabilityForm();
     setupPasskeyManagement();
 
     const signOutButton = document.querySelector("[data-admin-signout]");
@@ -604,6 +658,7 @@
     renderMetrics(state.summary);
     renderOverview(state.summary);
     Object.keys(sectionConfigs).forEach(renderRecordSection);
+    renderAvailabilitySchedule();
     showSection(state.activeSection);
   }
 
@@ -819,9 +874,114 @@
 
   }
 
+  function renderAvailabilitySchedule() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const upcomingEvents = (state.records.events || [])
+      .filter((item) => {
+        const window = getAvailabilityWindow("event", item);
+        return window && window.end >= today && eventStatus(item) !== "cancelled";
+      })
+      .sort((a, b) => {
+        const aWindow = getAvailabilityWindow("event", a);
+        const bWindow = getAvailabilityWindow("event", b);
+        return Number(aWindow?.start || 0) - Number(bWindow?.start || 0);
+      })
+      .slice(0, 6);
+
+    renderList("[data-list='availability-events']", upcomingEvents, (item) => {
+      const conflicts = getAvailabilityConflicts("event", item);
+      return {
+        title: item.title || "Untitled event",
+        meta: [
+          formatAvailabilityWindow(item, "event"),
+          item.venue_name || item.location,
+        ].filter(Boolean).join(" / "),
+        badge: conflicts.length > 0 ? createConflictBadge(conflicts) : eventStatus(item),
+      };
+    });
+  }
+
+  function availabilityFormPayload(form) {
+    const data = new FormData(form);
+    const title = String(data.get("title") || "").trim();
+    const blockType = String(data.get("blockType") || "").trim();
+    const startAt = localDateTimeToIso(data.get("startAt"));
+    const endAt = localDateTimeToIso(data.get("endAt"));
+    const publicMessage = String(data.get("publicMessage") || "").trim();
+    const internalNotes = String(data.get("internalNotes") || "").trim();
+
+    if (!title) throw new Error("Title is required.");
+    if (!blockType) throw new Error("Block type is required.");
+    if (!startAt || !endAt) throw new Error("Start and end date/time are required.");
+    if (Date.parse(endAt) <= Date.parse(startAt)) throw new Error("End date/time must be after start date/time.");
+
+    return {
+      title,
+      blockType,
+      startAt,
+      endAt,
+      allDay: data.get("allDay") === "on",
+      publicMessage: publicMessage || null,
+      internalNotes: internalNotes || null,
+    };
+  }
+
+  function localDateTimeToIso(value) {
+    if (!value) return null;
+    const date = new Date(String(value));
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toISOString();
+  }
+
   function setupNavigation() {
     document.querySelectorAll("[data-admin-nav]").forEach((button) => {
       button.addEventListener("click", () => showSection(button.dataset.adminNav));
+    });
+  }
+
+  function setupAvailabilityForm() {
+    const form = document.querySelector("[data-availability-form]");
+    if (!form) return;
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const submitButton = form.querySelector("[data-availability-submit]");
+      const message = document.querySelector("[data-availability-form-status]");
+
+      try {
+        if (!state.session) throw new Error("Admin session is not ready.");
+        const body = availabilityFormPayload(form);
+        setButtonBusy(submitButton, true);
+        if (message) {
+          message.textContent = "Saving availability block...";
+          message.dataset.status = "";
+        }
+
+        const created = await adminFetch("/admin/availability-blocks", state.session, {
+          method: "POST",
+          body,
+        });
+        form.reset();
+        await loadAdminData(state.session);
+        renderDashboard();
+        showSection("availability");
+
+        const conflictCount = Array.isArray(created?.conflict_warnings) ? created.conflict_warnings.length : 0;
+        if (message) {
+          message.textContent = conflictCount > 0
+            ? `Block created with ${conflictCount} conflict ${conflictCount === 1 ? "warning" : "warnings"}.`
+            : "Availability block created.";
+          message.dataset.status = conflictCount > 0 ? "warning" : "success";
+        }
+      } catch (error) {
+        if (message) {
+          message.textContent = error.message || "Could not create availability block.";
+          message.dataset.status = "error";
+        }
+      } finally {
+        setButtonBusy(submitButton, false);
+      }
     });
   }
 
@@ -1071,7 +1231,7 @@
       title.textContent = view.title;
       meta.textContent = view.meta || "Details pending";
       textWrap.append(title, meta);
-      li.append(textWrap, createBadge(view.badge || "open"));
+      li.append(textWrap, view.badge instanceof Node ? view.badge : createBadge(view.badge || "open"));
       list.append(li);
     });
   }
@@ -1118,6 +1278,113 @@
     badge.dataset.status = normalizeStatus(status || "open");
     badge.textContent = formatStatus(status || "open");
     return badge;
+  }
+
+  function createConflictBadge(conflicts) {
+    const badge = document.createElement("span");
+    badge.className = "admin-badge";
+    badge.dataset.status = conflicts.length > 0 ? "conflict" : "clear";
+    badge.textContent = conflicts.length > 0 ? `${formatNumber(conflicts.length)} ${conflicts.length === 1 ? "Conflict" : "Conflicts"}` : "Clear";
+    return badge;
+  }
+
+  function createConflictList(conflicts) {
+    const wrap = document.createElement("span");
+    wrap.className = "admin-conflict-stack";
+
+    if (conflicts.length === 0) {
+      wrap.textContent = "No conflicts detected.";
+      return wrap;
+    }
+
+    conflicts.forEach((conflict) => {
+      const item = document.createElement("span");
+      item.className = "admin-conflict-item";
+      const title = document.createElement("strong");
+      const meta = document.createElement("small");
+      title.textContent = conflict.title;
+      meta.textContent = [formatStatus(conflict.type), conflict.window, formatStatus(conflict.status)].filter(Boolean).join(" / ");
+      item.append(title, meta);
+      wrap.append(item);
+    });
+
+    return wrap;
+  }
+
+  function getAvailabilityConflicts(type, item) {
+    const target = getAvailabilityWindow(type, item);
+    if (!target) return [];
+
+    const conflicts = [];
+    (state.records.events || []).forEach((event) => {
+      if (type === "event" && event.id === item.id) return;
+      if (!BLOCKING_EVENT_STATUSES.has(eventStatus(event))) return;
+      const candidate = getAvailabilityWindow("event", event);
+      if (!candidate || !windowsOverlap(target, candidate)) return;
+      conflicts.push({
+        id: event.id,
+        type: "event",
+        title: event.title || "Untitled event",
+        status: eventStatus(event),
+        window: formatAvailabilityWindow(event, "event"),
+      });
+    });
+
+    (state.records.availability || []).forEach((block) => {
+      if (type === "block" && block.id === item.id) return;
+      const candidate = getAvailabilityWindow("block", block);
+      if (!candidate || !windowsOverlap(target, candidate)) return;
+      conflicts.push({
+        id: block.id,
+        type: "availability block",
+        title: block.title || "Availability block",
+        status: block.block_type || block.status || "unavailable",
+        window: formatAvailabilityWindow(block, "block"),
+      });
+    });
+
+    return conflicts;
+  }
+
+  function getAvailabilityWindow(type, item) {
+    if (!item) return null;
+    const startAt = parseDateTime(item.start_at);
+    const endAt = parseDateTime(item.end_at);
+    if (startAt && endAt && endAt > startAt) {
+      return { start: startAt, end: endAt };
+    }
+
+    if (type !== "event" || !item.event_date) return null;
+    const start = parseLocalDateTime(item.event_date, item.start_time || "00:00");
+    if (!start) return null;
+
+    let end = item.end_time
+      ? parseLocalDateTime(item.event_date, item.end_time)
+      : item.start_time
+        ? new Date(start.getTime() + 2 * 60 * 60 * 1000)
+        : parseLocalDateTime(item.event_date, "23:59");
+
+    if (!end) return null;
+    if (end <= start) end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+    return { start, end };
+  }
+
+  function windowsOverlap(a, b) {
+    return a.start < b.end && b.start < a.end;
+  }
+
+  function formatAvailabilityWindow(item, type) {
+    if (!item) return "";
+    if (type === "block") return formatDateTimeRange(item.start_at, item.end_at, item.all_day);
+    if (item.start_at && item.end_at) return formatDateTimeRange(item.start_at, item.end_at, false);
+    return [formatDate(item.event_date), formatTimeRange(item.start_time, item.end_time)].filter(Boolean).join(" / ");
+  }
+
+  function formatRequestedWindow(item) {
+    if (item?.requested_start_at && item?.requested_end_at) {
+      return formatDateTimeRange(item.requested_start_at, item.requested_end_at, false);
+    }
+    return [formatDate(item?.event_date), formatTimeRange(item?.start_time, item?.end_time)].filter(Boolean).join(" / ");
   }
 
   function eventStatus(item) {
@@ -1168,6 +1435,14 @@
     }).format(date);
   }
 
+  function formatDateTimeRange(startValue, endValue, allDay = false) {
+    const start = formatDateTime(startValue);
+    const end = formatDateTime(endValue);
+    if (!start && !end) return "";
+    const range = [start, end].filter(Boolean).join(" to ");
+    return allDay ? `${range} / All day` : range;
+  }
+
   function formatTime(value) {
     if (!value) return "";
     const [hours, minutes] = String(value).split(":").map((part) => Number.parseInt(part, 10));
@@ -1202,6 +1477,21 @@
   function parseLocalDate(value) {
     if (!value) return null;
     const date = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return null;
+    return date;
+  }
+
+  function parseDateTime(value) {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date;
+  }
+
+  function parseLocalDateTime(dateValue, timeValue) {
+    if (!dateValue || !timeValue) return null;
+    const normalizedTime = String(timeValue).slice(0, 5);
+    const date = new Date(`${dateValue}T${normalizedTime}`);
     if (Number.isNaN(date.getTime())) return null;
     return date;
   }
