@@ -9,6 +9,7 @@ const rootFileExtensions = new Set([".html", ".css", ".js", ".txt", ".ico", ".we
 const assetDirectories = ["assets"];
 
 const env = {
+  ...loadVercelConfigEnv(path.join(rootDir, "vercel.json")),
   ...loadEnvFile(path.join(rootDir, ".env")),
   ...loadEnvFile(path.join(rootDir, ".env.local")),
   ...process.env,
@@ -93,6 +94,18 @@ function loadEnvFile(filePath) {
   }
 
   return values;
+}
+
+function loadVercelConfigEnv(filePath) {
+  if (!process.env.VERCEL) return {};
+
+  try {
+    const parsed = JSON.parse(readFileSyncText(filePath));
+    return parsed && typeof parsed.env === "object" && !Array.isArray(parsed.env) ? parsed.env : {};
+  } catch (error) {
+    if (error.code === "ENOENT") return {};
+    throw error;
+  }
 }
 
 function readFileSyncText(filePath) {
