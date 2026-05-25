@@ -3,6 +3,15 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false,
+  "env": {
+    "PROJECT_NEO_ENV": "production",
+    "PROJECT_NEO_APP_URL": "https://tookoldweb.vercel.app",
+    "PROJECT_NEO_API_BASE_URL": "https://wgbyyaeivtavecaszler.functions.supabase.co/project-neo-api",
+    "SUPABASE_URL": "https://wgbyyaeivtavecaszler.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_3fXvrU_acD0Nc_QJROyOvw_zgbyMq3s",
+    "PROJECT_NEO_ADMIN_EMAIL": "djtookold@gmail.com",
+    "PROJECT_NEO_PUBLIC_CONTACT_EMAIL": "djtookold@gmail.com"
+  },
   "headers": [
     {
       "source": "/admin-login",

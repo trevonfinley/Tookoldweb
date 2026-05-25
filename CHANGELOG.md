@@ -11,7 +11,17 @@ Version format:
 
 ## [Unreleased]
 
+No unreleased changes documented yet.
+
+---
+
+## [0.8.0] - 2026-05-25
+
 ### Added
+- Added first successful Vercel web preview deployment documentation.
+- Documented `v0.8.0 — First Web Preview` in `VERSION.md` and `docs/versions/v0.8.0.md`.
+- Added deployment notes for the Vercel preview in `docs/deployment-notes.md`.
+- Added a deployment milestone summary for the first web preview.
 - Added `agents.md` with Project Neo agent collaboration and handoff rules.
 - Created `docs/agent-handoffs/` with the first Neo Prime handoff note.
 - Added availability checker requirements to `agents.md` for public-safe status handling and admin conflict checks.
@@ -24,12 +34,13 @@ Version format:
 ### Changed
 - Routed direct public email links and website contact metadata to `djtookold@gmail.com`.
 - Preserved public availability status and checked timestamp when booking inquiries are submitted after a successful checker result.
+- Confirmed the first Vercel deployment is a preview milestone, not the official `v1.0.0` MVP launch.
 
-### Fixed
-- 
+### Deferred
+- Confirmed Square integration remains deferred.
 
-### Removed
-- 
+### Compliance Notes
+- Confirmed SOC 2 Type II and PCI-DSS are readiness/alignment goals only, not official compliance claims.
 
 ---
 

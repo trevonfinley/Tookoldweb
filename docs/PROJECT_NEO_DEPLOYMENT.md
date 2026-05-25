@@ -332,6 +332,8 @@ Production Branch: main
 | Preview | Staging Supabase URL, staging publishable key, staging API URL, `PROJECT_NEO_ENV=staging`. |
 | Production | Production Supabase URL, production publishable key, production API URL, `PROJECT_NEO_ENV=production`. |
 
+For the initial `tookoldweb.vercel.app` launch, the production public browser values are also mirrored in `vercel.json` so the static build can complete even before dashboard-level Vercel environment variables are entered. Do not add server-only secrets to `vercel.json`.
+
 5. Keep `SUPABASE_SERVICE_ROLE_KEY`, payment secrets, and calendar secrets out of Vercel unless Project Neo later adds private Vercel server code.
 6. Enable deployment protection for preview/admin URLs if available on the account.
 
