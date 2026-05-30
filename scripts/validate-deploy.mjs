@@ -4,10 +4,20 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-const requiredFiles = [
+const publicPages = [
   "index.html",
+  "about.html",
+  "services.html",
   "booking.html",
+  "mixes.html",
+  "gallery.html",
+  "events.html",
   "contact.html",
+  "faq.html",
+];
+
+const requiredFiles = [
+  ...publicPages,
   "admin-login.html",
   "admin-dashboard.html",
   "auth-callback.html",
@@ -19,6 +29,7 @@ const requiredFiles = [
   "client-portal.html",
   "passkeys.js",
   "project-neo-config.js",
+  "assets/images/dj-too-kold-logo.jpeg",
   "supabase/functions/project-neo-api/index.ts",
   "supabase/migrations/20260523000000_project_neo_core.sql",
   "docs/PROJECT_NEO_DEPLOYMENT.md",
@@ -42,6 +53,26 @@ const failures = [];
 for (const file of requiredFiles) {
   if (!(await exists(path.join(rootDir, file)))) {
     failures.push(`Missing required file: ${file}`);
+  }
+}
+
+for (const page of publicPages) {
+  const pagePath = path.join(rootDir, page);
+  if (!(await exists(pagePath))) continue;
+
+  const content = await readFile(pagePath, "utf8");
+  const logoUseCount = (content.match(/assets\/images\/dj-too-kold-logo\.jpeg/g) || []).length;
+
+  if (!content.includes("site-header")) {
+    failures.push(`Public page is missing shared navbar: ${page}`);
+  }
+
+  if (!content.includes("site-footer")) {
+    failures.push(`Public page is missing shared footer: ${page}`);
+  }
+
+  if (logoUseCount < 2) {
+    failures.push(`Public page should render the official logo in header and footer: ${page}`);
   }
 }
 

@@ -1,0 +1,70 @@
+# Bug Hunter Production Regression Handoff
+
+- From: Bug Hunter / QA Test Engineer
+- To: Stack Mason / Backend Engineer, Launchpad / DevOps Engineer, Booker / Booking Systems Engineer, Mission Control / Admin Dashboard Engineer, Shield / Security Engineer, Pixel Frost / Frontend Engineer, Brand / Content Engineer
+- Related Version: Unreleased live production regression for the 2026-05-26 Vercel production deployment.
+- Summary: Live production now serves the Project Neo / DJ Too Kold frontend, but API-backed workflows remain blocked because the configured Supabase Edge Function is not deployed or reachable.
+- Files Changed:
+  - `CHANGELOG.md`
+  - `docs/agent-status.md`
+  - `docs/agent-handoffs/2026-05-26-bug-hunter-production-regression.md`
+- Decisions Made: Kept the pass strictly in QA/reporting scope and did not modify production application code.
+- Important Notes: Do not treat booking, contact, availability, media, mix, admin-data, or client-portal data flows as launch-ready until the backend function is deployed and re-tested.
+- What the Next Agent Should Do: Stack Mason should deploy and verify the production Supabase Edge Function, then coordinate a Bug Hunter retest with approved production-safe test submissions.
+- Blockers or Risks: Missing production API function causes public form/API flows and dynamic feeds to fail; admin/client static shells still require server/API authorization review.
+- Questions for the Next Agent: Should admin/client routes receive Vercel-level deployment protection, or is Supabase/API authorization the accepted control for launch?
+
+- Agent Name: Bug Hunter
+- Agent Role: QA Test Engineer
+- Date: 2026-05-26
+- Task Summary: Re-tested the live Vercel production deployment for Project Neo across desktop and mobile. Verified public pages, official logo rendering, navbar/footer routing, booking page, availability checker behavior, contact form validation, admin login/protection behavior, broken assets, console/API errors, and launch readiness.
+- Files Created:
+  - `docs/agent-handoffs/2026-05-26-bug-hunter-production-regression.md`
+  - QA artifacts under `/private/tmp/project-neo-live-qa/`, including screenshots and `report.json`
+  - Temporary QA runner scripts under `/private/tmp/`
+- Files Modified:
+  - `CHANGELOG.md`
+  - `docs/agent-status.md`
+- Files Deleted, if any: None.
+- Key Decisions Made:
+  - Stayed in QA / Bug Hunter scope and did not change production code.
+  - Did not submit valid booking or contact records to production to avoid creating test customer data.
+  - Performed a side-effect-free availability checker probe and non-writing API route checks to confirm live integration status.
+  - Treated missing production API routes as launch-blocking because booking, contact, availability, media, mixes, and admin/client data flows depend on them.
+- Data/API/Schema Changes: None. No database schema or application data changes were made. Live API checks observed missing Supabase Edge Function responses and CORS/preflight failures from the production frontend.
+- Environment Variable Changes: None. Production public config was inspected only; no environment variables were changed or documented with private values.
+- Security/Compliance Impact:
+  - Booking/contact production writes are not launch-ready while the API function is missing.
+  - Admin dashboard redirects unauthenticated browser users to login and no private rows were rendered during QA, but the static dashboard shell is publicly downloadable and should remain backed by server-side/API authorization.
+  - No secrets, private credentials, raw payment data, or private client/event data were added to documentation.
+- Agents That Need This Update:
+  - Stack Mason / Backend Engineer
+  - Launchpad / DevOps Engineer
+  - Booker / Booking Systems Engineer
+  - Mission Control / Admin Dashboard Engineer
+  - Shield / Security Engineer
+  - Pixel Frost / Frontend Engineer
+  - Brand / Content Engineer
+- Required Follow-Up Tasks:
+  - Deploy the `project-neo-api` Supabase Edge Function to the configured production project.
+  - Verify production CORS/preflight responses for `tookoldweb.vercel.app`.
+  - Re-test availability checker statuses for `available`, `pending`, `unavailable`, and `contact_required`.
+  - Re-test booking inquiry and contact message submissions using approved production-safe test data.
+  - Re-test dynamic media, mixes, and availability feeds after API deployment.
+  - Confirm whether admin/client routes require Vercel-level protection in addition to Supabase/API auth.
+- Risks or Blockers:
+  - Launch blocker: live availability checker cannot reach a deployed function and falls back to `contact_required`.
+  - Launch blocker: booking and contact API routes are missing, so valid public submissions are expected to fail.
+  - Dynamic gallery/media, mixes, and admin/client data feeds are blocked by the same missing backend function.
+  - Browser console shows production API 404/CORS errors on pages that request dynamic data.
+- Testing Performed:
+  - Confirmed the latest production Vercel deployment serves the Project Neo/DJ Too Kold site.
+  - Ran live desktop checks for home, about, services, mixes, gallery, events, FAQ, contact, booking, client portal, admin login, admin dashboard, signup, forgot password, and reset password routes.
+  - Verified official header/footer logo asset renders on live pages.
+  - Verified clean URL redirects resolve to HTTP 200 for the tested routes.
+  - Ran desktop and mobile browser checks at 1280px and 390px widths.
+  - Verified mobile menu opens and mobile booking page has no horizontal overflow.
+  - Verified booking and contact empty-form validation states.
+  - Verified admin dashboard redirects to admin login for unauthenticated browser access and rendered no private rows.
+  - Captured screenshots in `/private/tmp/project-neo-live-qa/`.
+- Suggested Next Agent: Stack Mason / Backend Engineer.

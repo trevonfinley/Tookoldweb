@@ -1,5 +1,5 @@
 (function () {
-  const fallbackImage = 'assets/images/dj-too-kold-thumb-720.jpg';
+  const fallbackImage = '/assets/images/dj-too-kold-thumb-720.jpg';
   const projectNeoConfig = window.ProjectNeoConfig || {};
   const apiBaseUrl = typeof projectNeoConfig.apiBaseUrl === 'string'
     ? projectNeoConfig.apiBaseUrl.replace(/\/+$/, '')
@@ -124,7 +124,7 @@
     const src = item.thumbnailUrl || item.fileUrl || item.coverImageUrl || fallbackImage;
     image.src = src;
     if (src.includes('dj-too-kold-thumb-720.jpg') || src.includes('dj-too-kold-hero-1400.jpg')) {
-      image.srcset = 'assets/images/dj-too-kold-thumb-720.jpg 720w, assets/images/dj-too-kold-hero-1400.jpg 1400w';
+      image.srcset = '/assets/images/dj-too-kold-thumb-720.jpg 720w, /assets/images/dj-too-kold-hero-1400.jpg 1400w';
       image.sizes = '(min-width: 760px) 33vw, 100vw';
     }
     image.alt = item.altText || item.title || 'DJ Too Kold media';

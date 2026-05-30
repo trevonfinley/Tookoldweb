@@ -1,8 +1,8 @@
 (function () {
-  const heroImage = 'assets/images/dj-too-kold-hero-1400.jpg';
-  const thumbImage = 'assets/images/dj-too-kold-thumb-720.jpg';
-  const logoImage = 'assets/images/dj-too-kold-logo-832.jpg';
-  const logoThumbImage = 'assets/images/dj-too-kold-logo-thumb-520.jpg';
+  const heroImage = '/assets/images/dj-too-kold-hero-1400.jpg';
+  const thumbImage = '/assets/images/dj-too-kold-thumb-720.jpg';
+  const logoImage = '/assets/images/dj-too-kold-logo-832.jpg';
+  const logoThumbImage = '/assets/images/dj-too-kold-logo-thumb-520.jpg';
 
   const mediaItems = [
     {

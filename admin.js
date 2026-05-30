@@ -492,25 +492,15 @@
   }
 
   async function initLogin() {
-    if (!requireConfig()) return;
-
     const form = document.querySelector("[data-admin-login-form]");
     const submitButton = form?.querySelector("button[type='submit']");
     setupLoginActions();
 
-    try {
-      const existingSession = await getSession();
-      if (existingSession) {
-        await adminFetch("/admin/me", existingSession);
-        window.location.replace(getSafeReturnPath());
-        return;
-      }
-    } catch {
-      await getSupabaseClient().auth.signOut();
-    }
-
     form?.addEventListener("submit", async (event) => {
       event.preventDefault();
+
+      if (!requireConfig()) return;
+
       const email = form.email.value.trim();
       const password = form.password.value;
 
@@ -539,6 +529,19 @@
         setButtonBusy(submitButton, false);
       }
     });
+
+    if (!requireConfig()) return;
+
+    try {
+      const existingSession = await getSession();
+      if (existingSession) {
+        await adminFetch("/admin/me", existingSession);
+        window.location.replace(getSafeReturnPath());
+        return;
+      }
+    } catch {
+      await getSupabaseClient().auth.signOut();
+    }
   }
 
   function setupLoginActions() {
@@ -548,6 +551,7 @@
       button.addEventListener("click", async () => {
         const provider = button.dataset.oauthProvider;
         try {
+          if (!requireConfig()) return;
           setButtonBusy(button, true);
           setStatus(`Opening ${formatStatus(provider)}...`);
           const { error } = await auth.signInWithOAuth(provider, getSafeReturnPath());
@@ -562,6 +566,7 @@
     const passkeyButton = document.querySelector("[data-passkey-signin]");
     passkeyButton?.addEventListener("click", async () => {
       try {
+        if (!requireConfig()) return;
         if (!passkeys) throw new Error("Passkey support is not loaded.");
         setButtonBusy(passkeyButton, true);
         setStatus("Checking passkey...");
@@ -581,7 +586,10 @@
   }
 
   async function initDashboard() {
-    if (!requireConfig()) return;
+    if (!requireConfig()) {
+      window.location.replace(getLoginUrl());
+      return;
+    }
 
     setupNavigation();
     setupRecordControls();
@@ -1455,8 +1463,21 @@
   function formatTimeRange(startTime, endTime) {
     const start = formatTime(startTime);
     const end = formatTime(endTime);
-    if (start && end) return `${start}-${end}`;
+    if (start && end) return `${start}-${end}${endsNextDay(startTime, endTime) ? " next day" : ""}`;
     return start || end;
+  }
+
+  function endsNextDay(startTime, endTime) {
+    const start = minutesFromTime(startTime);
+    const end = minutesFromTime(endTime);
+    return start !== null && end !== null && end <= start;
+  }
+
+  function minutesFromTime(value) {
+    if (!value) return null;
+    const [hours, minutes] = String(value).split(":").map((part) => Number.parseInt(part, 10));
+    if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+    return hours * 60 + minutes;
   }
 
   function formatTags(value) {

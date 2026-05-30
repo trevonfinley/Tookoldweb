@@ -283,6 +283,17 @@ Role helper functions live in the private schema as security-definer functions. 
 - Removing admin access should set `is_active = false` or change the role, then force sign-out/revoke sessions where strict immediate lockout is required.
 - Short JWT lifetimes and MFA for `owner` and `admin` accounts are recommended before live financial or contract workflows.
 
+## Vercel Protection Review
+
+Gatekeeper verification on May 25, 2026 found:
+
+- Public production pages on `tookoldweb.vercel.app` return `200`, which is expected.
+- `admin-login`, `admin-dashboard`, and `client-portal` return static HTML with `X-Robots-Tag: noindex, nofollow`.
+- Static admin/client HTML is not the data boundary. Private data must stay behind Supabase Auth, `/admin/*` or `/portal/*` Edge Function checks, and Postgres RLS.
+- Checked-in Vercel and Netlify header config should cover both clean URLs and `.html` URLs for admin, client portal, and auth workflow pages.
+- Unauthenticated live API verification could not prove deployed route behavior because the configured Supabase Edge Function URL returned `404 function not found`. Launchpad must confirm the production Edge Function deploy before final auth QA.
+- If route-level protection is required for previews or production admin/client pages, Launchpad should enable Vercel Authentication or Deployment Protection at the project level. That setting is not fully enforced by this static repo config.
+
 ## Notes for Other Engineers
 
 Mission Control:

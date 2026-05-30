@@ -1,12 +1,25 @@
 import { readFileSync } from "node:fs";
-import { mkdir, readdir, rm, stat, writeFile, copyFile } from "node:fs/promises";
+import { mkdir, readdir, rm, stat, writeFile, copyFile, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = path.join(rootDir, "dist");
 const rootFileExtensions = new Set([".html", ".css", ".js", ".txt", ".ico", ".webmanifest"]);
+const excludedRootFiles = new Set(["speed-insights.js"]);
 const assetDirectories = ["assets"];
+const speedInsightsPublicPages = new Set([
+  "index.html",
+  "about.html",
+  "services.html",
+  "booking.html",
+  "mixes.html",
+  "gallery.html",
+  "events.html",
+  "contact.html",
+  "faq.html",
+]);
+const speedInsightsScriptSrc = "/_vercel/speed-insights/script.js";
 
 const env = {
   ...loadVercelConfigEnv(path.join(rootDir, "vercel.json")),
@@ -14,6 +27,7 @@ const env = {
   ...loadEnvFile(path.join(rootDir, ".env.local")),
   ...process.env,
 };
+const shouldInjectSpeedInsights = Boolean(env.VERCEL);
 
 const deploymentEnv = env.PROJECT_NEO_ENV || env.VERCEL_ENV || env.CONTEXT || "development";
 const publicConfig = {
@@ -50,8 +64,8 @@ await mkdir(distDir, { recursive: true });
 const rootEntries = await readdir(rootDir, { withFileTypes: true });
 await Promise.all(
   rootEntries
-    .filter((entry) => entry.isFile() && rootFileExtensions.has(path.extname(entry.name)))
-    .map((entry) => copyFile(path.join(rootDir, entry.name), path.join(distDir, entry.name))),
+    .filter((entry) => entry.isFile() && rootFileExtensions.has(path.extname(entry.name)) && !excludedRootFiles.has(entry.name))
+    .map((entry) => copyRootFile(entry)),
 );
 
 for (const directory of assetDirectories) {
@@ -176,4 +190,121 @@ async function copyDirectory(source, destination) {
 
 function renderBrowserConfig(config) {
   return `window.ProjectNeoConfig = Object.freeze(${JSON.stringify(config, null, 2)});\n`;
+}
+
+async function copyRootFile(entry) {
+  const sourcePath = path.join(rootDir, entry.name);
+  const destinationPath = path.join(distDir, entry.name);
+
+  if (path.extname(entry.name) !== ".html") {
+    await copyFile(sourcePath, destinationPath);
+    return;
+  }
+
+  let html = rewriteHtmlForStaticBuild(await readFile(sourcePath, "utf8"));
+  if (shouldInjectSpeedInsights && speedInsightsPublicPages.has(entry.name)) {
+    html = injectSpeedInsights(html, routeForPage(entry.name));
+  }
+
+  await writeFile(destinationPath, html);
+  await writeCleanRoute(entry.name, html);
+}
+
+async function writeCleanRoute(fileName, html) {
+  if (fileName === "index.html") return;
+
+  const routeName = fileName.replace(/\.html$/, "");
+  const routeDirectory = path.join(distDir, routeName);
+  await mkdir(routeDirectory, { recursive: true });
+  await writeFile(path.join(routeDirectory, "index.html"), html);
+}
+
+function rewriteHtmlForStaticBuild(html) {
+  return removeLegacySpeedInsightsScript(html)
+    .replace(/\b(href|src)=(")([^"]+)(")/g, (_match, attribute, openQuote, value, closeQuote) => {
+      return `${attribute}=${openQuote}${rewriteLocalUrl(value)}${closeQuote}`;
+    })
+    .replace(/\b(srcset|imagesrcset)=(")([^"]+)(")/g, (_match, attribute, openQuote, value, closeQuote) => {
+      return `${attribute}=${openQuote}${rewriteSrcset(value)}${closeQuote}`;
+    });
+}
+
+function removeLegacySpeedInsightsScript(html) {
+  return html.replace(/\n?\s*<script\b[^>]*\bsrc=(["'])\/?speed-insights\.js\1[^>]*>\s*<\/script>/gi, "");
+}
+
+function rewriteSrcset(value) {
+  return value
+    .split(",")
+    .map((candidate) => {
+      const trimmed = candidate.trim();
+      if (!trimmed) return trimmed;
+
+      const [url, ...descriptor] = trimmed.split(/\s+/);
+      return [rewriteLocalUrl(url), ...descriptor].join(" ");
+    })
+    .join(", ");
+}
+
+function rewriteLocalUrl(value) {
+  if (!value || isExternalLikeUrl(value)) return value;
+
+  const [pathPart, hashPart = ""] = value.split("#");
+  const hash = hashPart ? `#${hashPart}` : "";
+
+  if (!pathPart) return value;
+  if (pathPart.startsWith("/")) return value;
+
+  const cleanHtmlMatch = pathPart.match(/^([^/?]+)\.html$/);
+  if (cleanHtmlMatch) {
+    const route = cleanHtmlMatch[1] === "index" ? "" : cleanHtmlMatch[1];
+    return `/${route}${hash}`;
+  }
+
+  return `/${pathPart}${hash}`;
+}
+
+function isExternalLikeUrl(value) {
+  return /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(value);
+}
+
+function injectSpeedInsights(html, route) {
+  if (html.includes(speedInsightsScriptSrc)) return html;
+  if (!html.includes("</head>")) {
+    throw new Error(`Cannot inject Vercel Speed Insights for ${route}: missing </head>.`);
+  }
+
+  return html.replace("</head>", `${renderSpeedInsightsSnippet(route)}\n</head>`);
+}
+
+function routeForPage(fileName) {
+  if (fileName === "index.html") return "/";
+  return `/${fileName.replace(/\.html$/, "")}`;
+}
+
+function renderSpeedInsightsSnippet(route) {
+  const safeRoute = escapeHtmlAttribute(route);
+
+  return `  <script>
+    window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+    window.si("beforeSend", function (event) {
+      try {
+        if (event && typeof event.url === "string") {
+          var url = new URL(event.url, window.location.origin);
+          if (/^\\/(?:admin|auth|client-portal)/.test(url.pathname)) return null;
+          event.url = url.pathname;
+        }
+      } catch (error) {}
+      return event;
+    });
+  </script>
+  <script defer src="${speedInsightsScriptSrc}" data-route="${safeRoute}" data-path="${safeRoute}"></script>`;
+}
+
+function escapeHtmlAttribute(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }

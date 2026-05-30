@@ -335,7 +335,29 @@ Production Branch: main
 For the initial `tookoldweb.vercel.app` launch, the production public browser values are also mirrored in `vercel.json` so the static build can complete even before dashboard-level Vercel environment variables are entered. Do not add server-only secrets to `vercel.json`.
 
 5. Keep `SUPABASE_SERVICE_ROLE_KEY`, payment secrets, and calendar secrets out of Vercel unless Project Neo later adds private Vercel server code.
-6. Enable deployment protection for preview/admin URLs if available on the account.
+6. Enable Vercel Authentication or Deployment Protection for preview deployments, and decide whether production admin/client URLs should also require Vercel-level access in addition to Supabase Auth. Public marketing pages must remain public.
+
+### Vercel Speed Insights
+
+Project Neo is currently a static HTML/CSS/JS site. Do not migrate to Next.js just to add Speed Insights, and do not use `@vercel/speed-insights/next` unless Neo Prime approves a future Next.js migration.
+
+For the current static architecture, Speed Insights is integrated by the static build:
+
+- Vercel builds inject the Vercel Speed Insights script into generated public-page HTML.
+- Local builds and `npm run dev` do not inject the script, which avoids localhost console noise and accidental local telemetry.
+- The script is limited to public marketing/booking/contact pages: `/`, `/about`, `/services`, `/booking`, `/mixes`, `/gallery`, `/events`, `/contact`, and `/faq`.
+- Auth, admin, and client portal pages are intentionally excluded.
+- A client-side `beforeSend` hook strips query strings, hashes, and private workflow paths before metrics are sent.
+- The build removes legacy standalone `speed-insights.js` references/files if a Vercel bot install branch is later reconciled into the source tree.
+
+Vercel project status:
+
+- Speed Insights route check: `https://tookoldweb.vercel.app/_vercel/speed-insights/script.js` returns `200`.
+- Vercel project metadata confirms recent `tookoldweb` deployments for Speed Insights, but the current production page references a standalone `speed-insights.js` file from a Vercel bot deployment rather than this local build-injection implementation.
+- Current production `client-portal.html` also references that standalone `speed-insights.js`; treat this as deployment drift and promote the local build-injection version before relying on private-page telemetry exclusions.
+- Vercel tracks enabled Speed Insights data across preview and production deployments, so review both environments after the next deployment.
+
+No server-only secrets, service role keys, payment secrets, OAuth secrets, Apple private keys, webhook secrets, or Supabase private credentials are required for Speed Insights.
 
 ## Netlify Setup
 

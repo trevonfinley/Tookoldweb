@@ -120,8 +120,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const formatAvailabilityRange = (startTime, endTime) => {
       const start = formatAvailabilityTime(startTime);
       const end = formatAvailabilityTime(endTime);
-      if (start && end) return `${start}-${end}`;
+      if (start && end) return `${start}-${end}${endsNextDay(startTime, endTime) ? ' next day' : ''}`;
       return start || end || 'Time pending';
+    };
+
+    const endsNextDay = (startTime, endTime) => {
+      const start = minutesFromTime(startTime);
+      const end = minutesFromTime(endTime);
+      return start !== null && end !== null && end <= start;
+    };
+
+    const minutesFromTime = (value) => {
+      if (!value) return null;
+      const [hours, minutes] = String(value).split(':').map((part) => Number.parseInt(part, 10));
+      if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+      return hours * 60 + minutes;
     };
 
     const setAvailabilityStatus = (message) => {
@@ -308,15 +321,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!readTrimmedValue(checkFields.endTime)) {
         setCheckError('endTime', 'Please add an end time.');
-        ok = false;
-      }
-
-      if (
-        readTrimmedValue(checkFields.startTime) &&
-        readTrimmedValue(checkFields.endTime) &&
-        readTrimmedValue(checkFields.endTime) <= readTrimmedValue(checkFields.startTime)
-      ) {
-        setCheckError('endTime', 'End time should be after start time.');
         ok = false;
       }
 
@@ -622,10 +626,6 @@ document.addEventListener('DOMContentLoaded', () => {
           ok = false;
         }
 
-        if (valueOf(fields.startTime) && valueOf(fields.endTime) && valueOf(fields.startTime) === valueOf(fields.endTime)) {
-          setError('endTime', 'End time should be different from start time.');
-          ok = false;
-        }
       } else {
         ok = requireField('name', 'Please enter your name.') && ok;
         ok = requireField('message', 'Please enter a message.') && ok;
@@ -635,16 +635,20 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
       if (!validate()) {
-        event.preventDefault();
         setStatus('Please fix the errors above.', 'error');
         return;
       }
 
       const endpoint = form.dataset.endpoint || defaultEndpoint;
-      if (!endpoint) return;
+      if (!endpoint) {
+        setStatus(`Online sending is not connected right now. Please use the Email directly link below to send this ${isBookingForm ? 'booking request' : 'message'}.`, 'error');
+        if (mailtoLink) mailtoLink.focus({ preventScroll: true });
+        return;
+      }
 
-      event.preventDefault();
       try {
         setStatus('Sending...');
         if (submitButton) submitButton.disabled = true;

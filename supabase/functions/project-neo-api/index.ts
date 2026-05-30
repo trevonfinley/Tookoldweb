@@ -553,6 +553,53 @@ function timeRange(startTime: unknown, endTime: unknown) {
   return { start, end };
 }
 
+function addDaysToIsoDate(value: string, days: number) {
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return value;
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function nearbyIsoDates(value: string) {
+  return [addDaysToIsoDate(value, -1), value, addDaysToIsoDate(value, 1)];
+}
+
+function dateTimeWindowFromParts(eventDate: string, startTime: string, endTime: string, timezone: string) {
+  const startMinutes = minutesFromTime(startTime);
+  const endMinutes = minutesFromTime(endTime);
+  if (startMinutes === null || endMinutes === null) return null;
+
+  const endDate = endMinutes <= startMinutes ? addDaysToIsoDate(eventDate, 1) : eventDate;
+  const startAt = zonedDateTimeToUtcIso(eventDate, startTime, timezone);
+  const endAt = zonedDateTimeToUtcIso(endDate, endTime, timezone);
+  if (Date.parse(endAt) <= Date.parse(startAt)) return null;
+
+  return {
+    eventDate,
+    endDate,
+    startAt,
+    endAt,
+  };
+}
+
+function scheduleWindowForRecord(record: Record<string, unknown>, timezone = DEFAULT_AVAILABILITY_TIMEZONE) {
+  if (record.start_at && record.end_at) {
+    return {
+      startAt: String(record.start_at),
+      endAt: String(record.end_at),
+    };
+  }
+
+  if (!record.event_date || !record.start_time || !record.end_time) return null;
+  const recordTimezone = record.timezone ? validateTimeZone(String(record.timezone)) ?? timezone : timezone;
+  return dateTimeWindowFromParts(
+    String(record.event_date),
+    String(record.start_time),
+    String(record.end_time),
+    recordTimezone,
+  );
+}
+
 function publicAvailabilityResult(status: string, reasonCode?: string) {
   const safeStatus = PUBLIC_AVAILABILITY_STATUSES.has(status) ? status : "contact_required";
   const result: Record<string, string> = {
@@ -666,16 +713,15 @@ function availabilityInputFromBody(body: Payload) {
 
     const startMinutes = minutesFromTime(startTime);
     const endMinutes = minutesFromTime(endTime);
-    if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+    if (startMinutes === null || endMinutes === null) {
       return {
         ok: false,
         result: publicAvailabilityResult("contact_required", "unclear_time_range"),
       };
     }
 
-    const startAt = zonedDateTimeToUtcIso(eventDate, startTime, timezone);
-    const endAt = zonedDateTimeToUtcIso(eventDate, endTime, timezone);
-    if (Date.parse(endAt) <= Date.parse(startAt)) {
+    const window = dateTimeWindowFromParts(eventDate, startTime, endTime, timezone);
+    if (!window) {
       return {
         ok: false,
         result: publicAvailabilityResult("contact_required", "unclear_time_range"),
@@ -690,8 +736,9 @@ function availabilityInputFromBody(body: Payload) {
         endTime,
         eventType,
         timezone,
-        startAt,
-        endAt,
+        startAt: window.startAt,
+        endAt: window.endAt,
+        endDate: window.endDate,
       },
     };
   } catch (error) {
@@ -875,6 +922,18 @@ function eventPayload(body: Payload) {
     EVENT_VISIBILITIES,
     "Event visibility",
   ) ?? (isPublic === null ? "private" : isPublic ? "public" : "private");
+  const eventDate = requiredDate(body, ["eventDate", "event_date"], "Event date");
+  const startTime = optionalTime(body, ["startTime", "start_time"], "Start time");
+  const endTime = optionalTime(body, ["endTime", "end_time"], "End time");
+  const timezoneInput = optionalString(body, ["timezone", "time_zone", "timeZone"], 80) ?? DEFAULT_AVAILABILITY_TIMEZONE;
+  const timezone = validateTimeZone(timezoneInput);
+  if (!timezone) {
+    throw new ApiError(400, "validation_error", "Event timezone is not supported.", { field: "timezone" });
+  }
+  const window = startTime && endTime ? dateTimeWindowFromParts(eventDate, startTime, endTime, timezone) : null;
+  if (startTime && endTime && !window) {
+    throw new ApiError(400, "validation_error", "Event time range is not clear.", { field: "endTime" });
+  }
 
   return {
     client_id: optionalUuid(body, ["clientId", "client_id"], "Client ID"),
@@ -883,9 +942,12 @@ function eventPayload(body: Payload) {
     package_id: optionalUuid(body, ["packageId", "package_id"], "Package ID"),
     title: requiredString(body, ["title"], "Event title", 180),
     event_type: optionalString(body, ["eventType", "event_type"], 120),
-    event_date: requiredDate(body, ["eventDate", "event_date"], "Event date"),
-    start_time: optionalTime(body, ["startTime", "start_time"], "Start time"),
-    end_time: optionalTime(body, ["endTime", "end_time"], "End time"),
+    event_date: eventDate,
+    start_time: startTime,
+    end_time: endTime,
+    timezone,
+    start_at: window?.startAt ?? null,
+    end_at: window?.endAt ?? null,
     venue_name: optionalString(body, ["venueName", "venue_name"], 180),
     location: optionalString(body, ["location"], 220),
     guest_count: optionalPositiveInt(body, ["guestCount", "guest_count"], "Guest count"),
@@ -1660,6 +1722,8 @@ async function findEventConflicts(
   ignoreEventId?: string,
 ) {
   if (!event.event_date || !isScheduledEventStatus(event.status)) return [];
+  const eventWindow = scheduleWindowForRecord(event);
+  if (!eventWindow) return [];
 
   let query = supabase
     .from("events")
@@ -1669,10 +1733,14 @@ async function findEventConflicts(
       event_date,
       start_time,
       end_time,
+      start_at,
+      end_at,
+      timezone,
       status,
       clients(id, full_name)
     `)
-    .eq("event_date", String(event.event_date))
+    .gte("event_date", addDaysToIsoDate(String(event.event_date), -1))
+    .lte("event_date", addDaysToIsoDate(String(event.event_date), 1))
     .in("status", [...EVENT_BLOCKING_STATUSES]);
 
   if (ignoreEventId) query = query.neq("id", ignoreEventId);
@@ -1681,7 +1749,10 @@ async function findEventConflicts(
   if (error) throw new ApiError(500, "event_conflict_check_failed", "Could not check event conflicts.", error.message);
 
   return (data ?? [])
-    .filter((candidate) => eventTimesOverlap(event.start_time, event.end_time, candidate.start_time, candidate.end_time))
+    .filter((candidate) => {
+      const candidateWindow = scheduleWindowForRecord(candidate as Record<string, unknown>);
+      return candidateWindow && isoWindowsOverlap(eventWindow.startAt, eventWindow.endAt, candidateWindow.startAt, candidateWindow.endAt);
+    })
     .map((candidate) => eventConflictSummary(candidate as Record<string, unknown>));
 }
 
@@ -1695,10 +1766,12 @@ function annotateEventConflicts(events: Record<string, unknown>[]) {
     const conflicts = events
       .filter((candidate) => {
         if (candidate.id === event.id) return false;
-        if (candidate.event_date !== event.event_date) return false;
         if (!isScheduledEventStatus(event.status)) return false;
         if (!isBlockingEventStatus(candidate.status)) return false;
-        return eventTimesOverlap(event.start_time, event.end_time, candidate.start_time, candidate.end_time);
+        const eventWindow = scheduleWindowForRecord(event);
+        const candidateWindow = scheduleWindowForRecord(candidate);
+        return eventWindow && candidateWindow &&
+          isoWindowsOverlap(eventWindow.startAt, eventWindow.endAt, candidateWindow.startAt, candidateWindow.endAt);
       })
       .map(eventConflictSummary);
 
@@ -1743,6 +1816,9 @@ async function fetchAdminEvents(request: Request, supabase: SupabaseClient) {
       event_date,
       start_time,
       end_time,
+      start_at,
+      end_at,
+      timezone,
       venue_name,
       location,
       guest_count,
@@ -1795,46 +1871,10 @@ function availabilityConflictSummary(type: string, record: Record<string, unknow
   };
 }
 
-function zonedIsoParts(value: unknown) {
-  const date = new Date(String(value || ""));
-  if (Number.isNaN(date.getTime())) return null;
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: DEFAULT_AVAILABILITY_TIMEZONE,
-    hour12: false,
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const parts = Object.fromEntries(
-    formatter
-      .formatToParts(date)
-      .filter((part) => part.type !== "literal")
-      .map((part) => [part.type, part.value]),
-  );
-
-  return {
-    date: `${parts.year}-${parts.month}-${parts.day}`,
-    time: `${parts.hour}:${parts.minute}`,
-  };
-}
-
 function legacyEventOverlapsBlock(event: Record<string, unknown>, block: Record<string, unknown>) {
-  if (!event.event_date) return false;
-  const blockStart = zonedIsoParts(block.start_at);
-  const blockEnd = zonedIsoParts(block.end_at);
-  if (!blockStart || !blockEnd) return false;
-  const startDate = blockStart.date;
-  const endDate = blockEnd.date;
-  const eventDate = String(event.event_date);
-  if (eventDate < startDate || eventDate > endDate) return false;
-  if (block.all_day) return true;
-
-  const blockStartTime = eventDate === startDate ? blockStart.time : "00:00";
-  const blockEndTime = eventDate === endDate ? blockEnd.time : "23:59";
-  return eventTimesOverlap(blockStartTime, blockEndTime, event.start_time, event.end_time);
+  const eventWindow = scheduleWindowForRecord(event);
+  if (!eventWindow || !block.start_at || !block.end_at) return false;
+  return isoWindowsOverlap(eventWindow.startAt, eventWindow.endAt, block.start_at, block.end_at);
 }
 
 async function findAvailabilityBlockConflicts(
@@ -1857,6 +1897,7 @@ async function findAvailabilityBlockConflicts(
         end_time,
         start_at,
         end_at,
+        timezone,
         status
       `)
       .in("status", [...EVENT_BLOCKING_STATUSES])
@@ -2306,6 +2347,7 @@ async function evaluatePublicAvailability(
     timezone: string;
     startAt: string;
     endAt: string;
+    endDate?: string;
   },
 ) {
   try {
@@ -2324,14 +2366,15 @@ async function evaluatePublicAvailability(
 
     const { data: legacyEvents, error: legacyEventsError } = await supabase
       .from("events")
-      .select("id, start_time, end_time")
-      .eq("event_date", input.eventDate)
+      .select("id, event_date, start_time, end_time, start_at, end_at, timezone")
+      .in("event_date", nearbyIsoDates(input.eventDate))
       .eq("status", "confirmed")
       .limit(100);
 
     if (legacyEventsError) throw legacyEventsError;
     const hasLegacyConflict = (legacyEvents ?? []).some((event) => {
-      return eventTimesOverlap(input.startTime, input.endTime, event.start_time, event.end_time);
+      const eventWindow = scheduleWindowForRecord(event as Record<string, unknown>, input.timezone);
+      return eventWindow && isoWindowsOverlap(input.startAt, input.endAt, eventWindow.startAt, eventWindow.endAt);
     });
 
     if (hasLegacyConflict) {

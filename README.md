@@ -196,6 +196,12 @@ Current reviewed baseline:
 - `scripts/validate-deploy.mjs` passes when run directly with Node.
 - `npm` was not available on the reviewer shell PATH, so `npm run validate` still needs to be confirmed in a normal developer environment.
 
+## Agent Handoffs
+
+Project Neo agents must create or update a handoff note in `docs/agent-handoffs/` after meaningful work. Use the file name format `YYYY-MM-DD-agent-name-task-summary.md` and start new notes from `docs/agent-handoffs/HANDOFF_TEMPLATE.md`.
+
+Handoffs should clearly explain what changed, which files changed, key decisions, data/API/schema impact, environment variable impact, security/compliance impact, affected agents, follow-up work, risks or blockers, testing performed, and the suggested next agent. Do not include secrets, API keys, tokens, passwords, private credentials, private client details, or unfinished work described as complete.
+
 ## Missing Setup Files
 
 The next tooling pass should add or confirm:
@@ -254,6 +260,9 @@ Phase 6: Operations scale
 - `docs/PROJECT_NEO_AUTH.md`: admin/client auth flow, roles, owner bootstrap, redirect URLs, OAuth setup, passkeys, and access assumptions.
 - `docs/PROJECT_NEO_DEPLOYMENT.md`: local setup, environment model, Supabase deployment, Vercel/Netlify setup, auth provider setup, launch checklist.
 - `docs/PROJECT_NEO_QA_BUG_REPORT.md`: current QA findings and fix checklist.
+- `AGENTS.md`: agent collaboration rules, handoff protocol, availability checker requirements, and compliance readiness requirements.
+- `docs/agent-handoffs/HANDOFF_TEMPLATE.md`: required structure for new handoff notes.
+- `docs/agent-status.md`: current agent status summary and recent handoff index.
 
 ## Notes For The Next Engineer
 

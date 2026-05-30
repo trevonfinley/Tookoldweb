@@ -118,12 +118,15 @@
   }
 
   async function initPortal() {
-    if (!requireConfig()) return;
-
     setupLogin();
     setupEventPicker();
     setupSongForm();
     document.querySelector("[data-portal-signout]")?.addEventListener("click", signOut);
+
+    if (!requireConfig()) {
+      showAuth();
+      return;
+    }
 
     try {
       const session = await getSession();
@@ -146,6 +149,9 @@
     const submitButton = form?.querySelector("button[type='submit']");
     form?.addEventListener("submit", async (event) => {
       event.preventDefault();
+
+      if (!requireConfig()) return;
+
       const email = form.email.value.trim();
       const password = form.password.value;
 
@@ -869,8 +875,21 @@
   function formatTimeRange(startTime, endTime) {
     const start = formatTime(startTime);
     const end = formatTime(endTime);
-    if (start && end) return `${start}-${end}`;
+    if (start && end) return `${start}-${end}${endsNextDay(startTime, endTime) ? " next day" : ""}`;
     return start || end;
+  }
+
+  function endsNextDay(startTime, endTime) {
+    const start = minutesFromTime(startTime);
+    const end = minutesFromTime(endTime);
+    return start !== null && end !== null && end <= start;
+  }
+
+  function minutesFromTime(value) {
+    if (!value) return null;
+    const [hours, minutes] = String(value).split(":").map((part) => Number.parseInt(part, 10));
+    if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+    return hours * 60 + minutes;
   }
 
   function formatStatus(value) {

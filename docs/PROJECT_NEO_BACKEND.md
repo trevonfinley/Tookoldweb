@@ -147,6 +147,8 @@ Response:
 
 Public statuses are `available`, `pending`, `unavailable`, and `contact_required`.
 
+- The event date is treated as the start date.
+- If the end time is equal to or earlier than the start time, the event is treated as ending on the next calendar day.
 - `confirmed` event overlap returns `unavailable`.
 - `personal_block`, `travel_block`, `unavailable`, or `booked` block overlap returns `unavailable`.
 - `hold` block overlap returns `pending`.

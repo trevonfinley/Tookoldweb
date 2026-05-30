@@ -56,7 +56,6 @@
   }
 
   async function initSignup() {
-    if (!requireConfig()) return;
     setupOAuthButtons("admin-dashboard.html");
 
     const form = document.querySelector("[data-auth-signup-form]");
@@ -64,6 +63,9 @@
 
     form?.addEventListener("submit", async (event) => {
       event.preventDefault();
+
+      if (!requireConfig()) return;
+
       const fullName = form.fullName.value.trim();
       const email = form.email.value.trim();
       const password = form.password.value;
@@ -92,16 +94,19 @@
         setBusy(submitButton, false);
       }
     });
+
+    requireConfig();
   }
 
   async function initForgotPassword() {
-    if (!requireConfig()) return;
-
     const form = document.querySelector("[data-auth-forgot-form]");
     const submitButton = form?.querySelector("button[type='submit']");
 
     form?.addEventListener("submit", async (event) => {
       event.preventDefault();
+
+      if (!requireConfig()) return;
+
       const email = form.email.value.trim();
       if (!email) {
         setStatus("Email is required.", "error");
@@ -120,23 +125,19 @@
         setBusy(submitButton, false);
       }
     });
+
+    requireConfig();
   }
 
   async function initResetPassword() {
-    if (!requireConfig()) return;
-
-    try {
-      const { error } = await auth.exchangeCodeForSession();
-      if (error) throw error;
-    } catch (error) {
-      setStatus(error.message || "Reset session could not be confirmed.", "error");
-    }
-
     const form = document.querySelector("[data-auth-reset-form]");
     const submitButton = form?.querySelector("button[type='submit']");
 
     form?.addEventListener("submit", async (event) => {
       event.preventDefault();
+
+      if (!requireConfig()) return;
+
       const password = form.password.value;
       const confirmPassword = form.confirmPassword.value;
 
@@ -158,6 +159,15 @@
         setBusy(submitButton, false);
       }
     });
+
+    if (!requireConfig()) return;
+
+    try {
+      const { error } = await auth.exchangeCodeForSession();
+      if (error) throw error;
+    } catch (error) {
+      setStatus(error.message || "Reset session could not be confirmed.", "error");
+    }
   }
 
   async function initCallback() {

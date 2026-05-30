@@ -2,31 +2,131 @@
 
 Agents do not work in isolation. Each agent must leave clear handoff notes when their work affects another engineer.
 
+## Agent Handoff and Change Notification Protocol
+
+Every agent must create a handoff/update note after completing any meaningful task.
+
+The goal is to keep all Project Neo agents aligned on:
+- What changed
+- Why it changed
+- Which files were changed
+- Which agents are affected
+- What the next agent needs to know
+- What risks, blockers, or follow-up tasks exist
+
 Required handoff folder:
 - `docs/agent-handoffs/`
 
-When an agent completes meaningful work, they must create or update a handoff note using this format:
+Required handoff template:
+- `docs/agent-handoffs/HANDOFF_TEMPLATE.md`
 
-- From:
-- To:
-- Date:
-- Related Version:
-- Summary
-- Files Changed
-- Decisions Made
-- Important Notes
-- What the Next Agent Should Do
-- Blockers or Risks
-- Questions for the Next Agent
+Required format:
+- File name format:
+  - `YYYY-MM-DD-agent-name-task-summary.md`
+  - Example: `2026-05-25-stack-mason-availability-api.md`
+- Start from `docs/agent-handoffs/HANDOFF_TEMPLATE.md` when creating a new handoff note.
+
+Every handoff note must include:
+1. Agent Name
+2. Agent Role
+3. Date
+4. Task Summary
+5. Files Created
+6. Files Modified
+7. Files Deleted
+8. Key Decisions Made
+9. Data/API/Schema Changes
+10. Environment Variable Changes
+11. Security/Compliance Impact
+12. Agents That Need This Update
+13. Required Follow-Up Tasks
+14. Risks or Blockers
+15. Testing Performed
+16. Suggested Next Agent
 
 Rules:
-- If the work affects another agent, write a handoff note.
-- If database changes are made, notify Backend Engineer, Admin Dashboard Engineer, Booking Systems Engineer, Security Engineer, and DevOps Engineer as needed.
-- If authentication changes are made, notify Admin Dashboard Engineer, Security Engineer, and DevOps Engineer.
-- If UI components are changed, notify Frontend Engineer and QA Test Engineer.
-- If deployment settings are changed, notify DevOps Engineer and Security Engineer.
+- If backend/API behavior changes, notify Stack Mason, Booker, Mission Control, Data Knox, Shield, Bug Hunter, and Scribe as needed.
+- If database/schema changes, notify Data Knox, Stack Mason, Booker, Mission Control, Shield, and Scribe.
+- If UI/components change, notify Pixel Frost, Style Guide, Access, Booker, Mission Control, Bug Hunter, and Scribe as needed.
+- If authentication changes, notify Gatekeeper, Mission Control, Concierge, Shield, Launchpad, Data Knox, Bug Hunter, and Scribe.
+- If payments/invoices change, notify Ledger, Data Knox, Mission Control, Shield, Launchpad, Bug Hunter, and Scribe.
+- If deployment/env/config changes, notify Launchpad, Shield, Scribe, and any affected feature owner.
+- If documentation/versioning changes, notify Scribe and any affected agent.
+- If security/compliance changes, notify Shield, Audit, Launchpad, Gatekeeper, Data Knox, and Scribe.
+- If availability/calendar logic changes, notify Sync, Stack Mason, Booker, Mission Control, Shield, Bug Hunter, and Scribe.
+- If the work affects another agent, do not assume they know. Write it down.
+- Update `CHANGELOG.md` if the work is meaningful.
+- Update `docs/agent-status.md` if the work changes project status.
+- Do not document fake work as completed.
+- Do not include secrets, tokens, API keys, passwords, or private credentials in handoff notes.
 - If a task is outside the current agent's role, leave a note instead of building it directly.
-- Update `CHANGELOG.md` when meaningful work is completed.
+
+## Architecture Handoff Requirements
+
+At the end of every task, Neo Prime must create a handoff note for any agents affected by architecture, routing, folder structure, app strategy, or major technical decisions.
+
+Always notify:
+- Data Knox for schema/data impact
+- Stack Mason for backend/API impact
+- Pixel Frost for frontend structure impact
+- Mission Control for admin structure impact
+- Launchpad for deployment/config impact
+- Scribe for documentation/versioning impact
+- Shield for security impact
+
+Architecture handoffs must include:
+- Architecture changes
+- Folder/file structure changes
+- New conventions
+- Affected modules
+- Risks
+- Recommended next agent
+
+## Booking Flow Handoff Requirements
+
+At the end of every task, Booker must create a handoff note for any agents affected by booking flow changes.
+
+Always notify:
+- Stack Mason if APIs/backend logic changed
+- Data Knox if booking data fields changed
+- Mission Control if admin booking display needs updates
+- Sync if availability/calendar behavior changed
+- Ledger if deposits/invoices are affected
+- Shield if private data/security is affected
+- Bug Hunter for QA
+- Scribe for documentation
+
+Booking flow handoffs must include:
+- Booking flow changes
+- Form fields changed
+- Validation rules
+- API/data requirements
+- Availability checker behavior, if affected
+- Admin follow-up needed
+- Testing performed
+
+## Authentication Handoff Requirements
+
+At the end of every task, Gatekeeper must create or update a handoff note for any agents affected by authentication or authorization changes.
+
+Always notify:
+- Mission Control for protected admin routes
+- Concierge for future client portal access
+- Shield for security review
+- Launchpad for environment variables and redirect URLs
+- Data Knox for user/role schema impact
+- Bug Hunter for auth testing
+- Scribe for documentation
+
+Authentication handoffs must include:
+- Auth methods changed
+- Login/signup/callback routes changed
+- Role/permission changes
+- Protected route behavior
+- Environment variables required
+- Redirect URL notes
+- Security risks
+- Testing performed
 
 ## Availability Checker Requirements
 
