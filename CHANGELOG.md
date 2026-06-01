@@ -11,7 +11,12 @@ Version format:
 
 ## [Unreleased]
 
-No unreleased changes documented yet.
+### Fixed
+- Fixed booking availability checker UI validation so overnight windows such as 10:00 PM to 2:00 AM are allowed instead of rejected.
+- Fixed booking inquiry UI validation so equal start/end times are treated as an overnight next-day window instead of a client-side error.
+
+### Changed
+- Added public booking form helper copy explaining that overnight events are allowed and morning end times should be used for next-day endings.
 
 ---
 

@@ -15,6 +15,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const publicAvailabilityStatuses = new Set(['available', 'pending', 'unavailable', 'contact_required']);
   const readTrimmedValue = (field) => (field && field.value ? field.value.trim() : '');
+  const minutesFromTimeValue = (value) => {
+    if (!value) return null;
+    const [hours, minutes] = String(value).split(':').map((part) => Number.parseInt(part, 10));
+    if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+    return hours * 60 + minutes;
+  };
+  const isOvernightWindow = (startTime, endTime) => {
+    const start = minutesFromTimeValue(startTime);
+    const end = minutesFromTimeValue(endTime);
+    return start !== null && end !== null && end <= start;
+  };
   const todayInputValue = () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -120,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const formatAvailabilityRange = (startTime, endTime) => {
       const start = formatAvailabilityTime(startTime);
       const end = formatAvailabilityTime(endTime);
-      if (start && end) return `${start}-${end}`;
+      if (start && end) return `${start}-${end}${isOvernightWindow(startTime, endTime) ? ' next day' : ''}`;
       return start || end || 'Time pending';
     };
 
@@ -238,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    const renderAvailabilityResult = (result, isError = false) => {
+    const renderAvailabilityResult = (result, isError = false, options = {}) => {
       if (!resultEl) return;
       const status = isError ? 'contact_required' : normalizeAvailabilityStatus(result?.status);
       const copy = availabilityCopy[status] || availabilityCopy.contact_required;
@@ -268,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
       heading.append(title, badge);
       resultEl.append(heading, body, note);
       resultEl.hidden = false;
-      if (continueButton) continueButton.hidden = false;
+      if (continueButton) continueButton.hidden = options.allowContinue === false;
     };
 
     const checkerPayload = () => ({
@@ -311,15 +322,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ok = false;
       }
 
-      if (
-        readTrimmedValue(checkFields.startTime) &&
-        readTrimmedValue(checkFields.endTime) &&
-        readTrimmedValue(checkFields.endTime) <= readTrimmedValue(checkFields.startTime)
-      ) {
-        setCheckError('endTime', 'End time should be after start time.');
-        ok = false;
-      }
-
       return ok;
     };
 
@@ -331,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAvailabilityResult({
           status: 'contact_required',
           message: 'Add the required event details to check availability.'
-        }, true);
+        }, true, { allowContinue: false });
         return;
       }
 
@@ -622,10 +624,6 @@ document.addEventListener('DOMContentLoaded', () => {
           ok = false;
         }
 
-        if (valueOf(fields.startTime) && valueOf(fields.endTime) && valueOf(fields.startTime) === valueOf(fields.endTime)) {
-          setError('endTime', 'End time should be different from start time.');
-          ok = false;
-        }
       } else {
         ok = requireField('name', 'Please enter your name.') && ok;
         ok = requireField('message', 'Please enter a message.') && ok;
