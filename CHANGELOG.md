@@ -17,6 +17,7 @@ Version format:
 
 ### Changed
 - Added public booking form helper copy explaining that overnight events are allowed and morning end times should be used for next-day endings.
+- Removed public header/footer links to the deferred client portal and added invitation-only private-beta copy to the direct portal login shell.
 
 ---
 
