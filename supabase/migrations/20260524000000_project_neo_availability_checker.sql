@@ -123,9 +123,10 @@ grant select, insert, update, delete on public.availability_blocks to authentica
 revoke all on public.availability_blocks from anon;
 
 drop policy if exists "Project Neo staff manage availability blocks" on public.availability_blocks;
-create policy "Project Neo staff manage availability blocks"
+drop policy if exists "Project Neo admins manage availability blocks" on public.availability_blocks;
+create policy "Project Neo admins manage availability blocks"
 on public.availability_blocks
 for all
 to authenticated
-using (private.is_project_neo_staff())
-with check (private.is_project_neo_staff());
+using (private.is_project_neo_admin())
+with check (private.is_project_neo_admin());

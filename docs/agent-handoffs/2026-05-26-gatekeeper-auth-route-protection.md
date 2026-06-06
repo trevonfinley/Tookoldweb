@@ -37,7 +37,7 @@ Verified Project Neo admin and client portal access boundaries, hardened missing
 - `vercel.json`
 - `CHANGELOG.md`
 
-## Files Deleted, if any
+## Files Deleted
 
 - None.
 

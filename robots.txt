@@ -1,9 +1,18 @@
 User-agent: *
 Allow: /
+Disallow: /admin-login
 Disallow: /admin-login.html
+Disallow: /admin-dashboard
 Disallow: /admin-dashboard.html
+Disallow: /auth-callback
 Disallow: /auth-callback.html
+Disallow: /auth-forgot-password
 Disallow: /auth-forgot-password.html
+Disallow: /auth-reset-password
 Disallow: /auth-reset-password.html
+Disallow: /auth-signup
 Disallow: /auth-signup.html
+Disallow: /client-portal
 Disallow: /client-portal.html
+
+Sitemap: https://tookoldweb.vercel.app/sitemap.xml

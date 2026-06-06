@@ -119,11 +119,11 @@ Creates a booking inquiry from the public booking form.
 
 Required fields are client name, email, event type, event date, city/state, and estimated guest count. The API accepts camelCase, snake_case, and HTML form-style hyphenated field names for the booking payload, stores a derived `full_name`, splits first/last name when possible for admin review, and builds the required internal `message` summary when the public form does not send one.
 
-When event date, start time, and end time are present, booking inquiry creation stores the public availability snapshot in `requested_start_at`, `requested_end_at`, `availability_status_at_submission`, and `availability_checked_at`. If the public checker already showed one of the allowed public statuses, the inquiry preserves that shown status and checked timestamp; otherwise the Edge Function rechecks availability during submission. This is a historical lead-submission snapshot, not a final booking guarantee.
+When event date, start time, and end time are present, booking inquiry creation stores the public availability snapshot in `requested_start_at`, `requested_end_at`, `availability_status_at_submission`, and `availability_checked_at`. The Edge Function recomputes the snapshot server-side during submission so client-provided availability fields are historical UI context only, not trusted booking state. This is a historical lead-submission snapshot, not a final booking guarantee.
 
 ### `POST /availability-check`
 
-Checks a requested event window against confirmed events and `availability_blocks`, then returns a safe public status only. The alias `POST /availability/check` is also supported for Booker integration.
+Checks a requested event window against blocking admin events and `availability_blocks`, then returns a safe public status only. The alias `POST /availability/check` is also supported for Booker integration.
 
 ```json
 {
@@ -150,12 +150,14 @@ Public statuses are `available`, `pending`, `unavailable`, and `contact_required
 - The event date is treated as the start date.
 - If the end time is equal to or earlier than the start time, the event is treated as ending on the next calendar day.
 - `confirmed` event overlap returns `unavailable`.
+- `pending` or `hold` event overlap returns `pending`.
 - `personal_block`, `travel_block`, `unavailable`, or `booked` block overlap returns `unavailable`.
 - `hold` block overlap returns `pending`.
 - `maintenance_day` or `setup_day` block overlap returns `contact_required`.
 - Missing or unclear date/time input returns `contact_required`.
+- Dates outside the supported launch horizon return `contact_required`.
 
-This route never returns client names, venue names, event titles, block titles, internal notes, raw block reasons, invoice/payment details, or private event metadata.
+This route never returns client names, venue names, event titles, block titles, internal notes, raw block reasons, reason codes, invoice/payment details, or private event metadata.
 
 ### `POST /contact-messages`
 
@@ -184,7 +186,7 @@ Returns active `packages` formatted for the public site.
 
 ### `GET /availability`
 
-Returns sanitized public availability holds without client, venue, internal note, or calendar sync details. Private events still block availability, but their label is returned as `Unavailable`. Supports `?limit=20`, optional `?from=YYYY-MM-DD`, and optional `?to=YYYY-MM-DD`.
+Returns only intentionally public availability events without client, venue, internal note, private hold, or calendar sync details. Private events still block `POST /availability-check`, but they are not listed in this public feed. Supports `?limit=20`, optional `?from=YYYY-MM-DD`, and optional `?to=YYYY-MM-DD`.
 
 ```json
 [
@@ -212,9 +214,9 @@ Mission Control:
 - Use the booking inquiry availability snapshot to understand what the visitor saw at submission time.
 
 Shield:
-- Review public availability serialization before launch.
+- Keep public availability serialization limited to safe status, safe message, and checked timestamp.
 - Confirm anonymous users cannot query `availability_blocks`, private `events`, `clients`, `invoices`, `payments`, or private notes directly.
-- Treat `reason_code` as public-safe only; do not add private labels or raw block reasons to it.
+- Keep reason codes internal-only. Do not return private labels, raw block reasons, or operational conflict sources to public callers.
 
 Sync:
 - Populate `events.start_at` and `events.end_at` for confirmed synced bookings.

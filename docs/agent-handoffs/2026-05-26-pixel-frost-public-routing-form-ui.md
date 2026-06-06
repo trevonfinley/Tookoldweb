@@ -30,7 +30,7 @@ Fixed public website clean-route build output, public media asset paths, and boo
 - `scripts/build-site.mjs`
 - `scripts/validate-deploy.mjs`
 
-## Files Deleted, if any
+## Files Deleted
 
 - None.
 

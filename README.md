@@ -202,6 +202,12 @@ Project Neo agents must create or update a handoff note in `docs/agent-handoffs/
 
 Handoffs should clearly explain what changed, which files changed, key decisions, data/API/schema impact, environment variable impact, security/compliance impact, affected agents, follow-up work, risks or blockers, testing performed, and the suggested next agent. Do not include secrets, API keys, tokens, passwords, private credentials, private client details, or unfinished work described as complete.
 
+## Launch Readiness
+
+Official launch readiness is tracked in `docs/PROJECT_NEO_LAUNCH_READINESS.md`. As of 2026-06-06, Project Neo remains NO-GO for official public launch even though the public Vercel site, production Supabase schema, full production API, overnight booking behavior, and public booking/contact writes are live.
+
+Current launch blockers include owner email confirmation and first sign-in, approved authenticated admin/client QA sessions or explicit deferrals, authenticated admin/invoice/payment success-path QA, final domain decision, final Shield/Bug Hunter security and telemetry recheck, and a final production regression. Neo Prime declares GO only after all critical blockers pass or receive explicit owner-approved deferrals.
+
 ## Missing Setup Files
 
 The next tooling pass should add or confirm:
@@ -259,6 +265,8 @@ Phase 6: Operations scale
 - `docs/PROJECT_NEO_DATABASE_SCHEMA.md`: schema, statuses, relationships, RLS model, indexes, and seed data.
 - `docs/PROJECT_NEO_AUTH.md`: admin/client auth flow, roles, owner bootstrap, redirect URLs, OAuth setup, passkeys, and access assumptions.
 - `docs/PROJECT_NEO_DEPLOYMENT.md`: local setup, environment model, Supabase deployment, Vercel/Netlify setup, auth provider setup, launch checklist.
+- `docs/deployment-notes.md`: preview and production deployment records, deploy IDs, domain status, rollback notes, and launch follow-up.
+- `docs/PROJECT_NEO_LAUNCH_READINESS.md`: Neo Prime launch-readiness summary, launch blockers, launch gates, and handoff coverage.
 - `docs/PROJECT_NEO_QA_BUG_REPORT.md`: current QA findings and fix checklist.
 - `AGENTS.md`: agent collaboration rules, handoff protocol, availability checker requirements, and compliance readiness requirements.
 - `docs/agent-handoffs/HANDOFF_TEMPLATE.md`: required structure for new handoff notes.

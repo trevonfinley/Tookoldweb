@@ -65,6 +65,7 @@ const EVENT_STATUS_ALIASES: Record<string, string> = {
 const EVENT_VISIBILITIES = new Set(["public", "private"]);
 const EVENT_SCHEDULING_STATUSES = new Set(["inquiry", "pending", "confirmed", "hold"]);
 const EVENT_BLOCKING_STATUSES = new Set(["pending", "confirmed", "hold"]);
+const EVENT_BLOCKING_STATUS_QUERY = [...EVENT_BLOCKING_STATUSES, ...LEGACY_EVENT_STATUSES];
 const INVOICE_STATUSES = new Set(["draft", "sent", "partially_paid", "paid", "overdue", "cancelled"]);
 const PAYMENT_STATUSES = new Set(["pending", "paid", "failed", "refunded"]);
 const TASK_STATUSES = new Set(["todo", "in_progress", "waiting", "done", "cancelled"]);
@@ -72,7 +73,11 @@ const PAYMENT_TYPES = new Set(["deposit", "balance", "refund", "other"]);
 const CLIENT_OPEN_EVENT_STATUSES = new Set(["pending", "confirmed", "hold", "tentative"]);
 const ADMIN_ROLES = new Set(["owner", "admin"]);
 const DEFAULT_AVAILABILITY_TIMEZONE = Deno.env.get("PROJECT_NEO_DEFAULT_TIMEZONE") || "America/Chicago";
+const DEFAULT_ALLOWED_ORIGIN = "https://tookoldweb.vercel.app";
 const PUBLIC_AVAILABILITY_STATUSES = new Set(["available", "pending", "unavailable", "contact_required"]);
+const AVAILABILITY_CHECK_RATE_LIMIT = { max: 20, windowMs: 10 * 60 * 1000 };
+const PUBLIC_AVAILABILITY_FEED_RATE_LIMIT = { max: 60, windowMs: 10 * 60 * 1000 };
+const AVAILABILITY_LOOKAHEAD_DAYS = 370;
 const AVAILABILITY_BLOCK_TYPES = new Set([
   "hold",
   "booked",
@@ -93,6 +98,7 @@ const PUBLIC_AVAILABILITY_MESSAGES: Record<string, string> = {
 const UNAVAILABLE_BLOCK_TYPES = new Set(["booked", "personal_block", "travel_block", "unavailable"]);
 const PENDING_BLOCK_TYPES = new Set(["hold"]);
 const CONTACT_REQUIRED_BLOCK_TYPES = new Set(["maintenance_day", "setup_day"]);
+const RATE_LIMIT_BUCKETS = new Map<string, { count: number; resetAt: number }>();
 
 const CARD_DATA_KEYS = new Set([
   "cardNumber",
@@ -136,9 +142,17 @@ class ApiError extends Error {
 }
 
 function corsHeaders(request: Request) {
-  const configuredOrigin = Deno.env.get("PROJECT_NEO_ALLOWED_ORIGIN") || "*";
+  const configuredOrigin = Deno.env.get("PROJECT_NEO_ALLOWED_ORIGIN") || DEFAULT_ALLOWED_ORIGIN;
   const requestOrigin = request.headers.get("Origin") || "*";
-  const allowOrigin = configuredOrigin === "*" ? requestOrigin : configuredOrigin;
+  const allowedOrigins = configuredOrigin
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const allowOrigin = allowedOrigins.includes("*")
+    ? requestOrigin
+    : allowedOrigins.includes(requestOrigin)
+      ? requestOrigin
+      : allowedOrigins[0] || DEFAULT_ALLOWED_ORIGIN;
 
   return {
     "Access-Control-Allow-Origin": allowOrigin,
@@ -179,6 +193,36 @@ function fail(request: Request, error: unknown) {
       message: "Something went wrong while processing the request.",
     },
   });
+}
+
+function rateLimitKey(request: Request, route: string) {
+  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const clientIp = request.headers.get("cf-connecting-ip")
+    || request.headers.get("x-real-ip")
+    || forwardedFor
+    || "unknown";
+  const userAgent = (request.headers.get("user-agent") || "unknown").slice(0, 120);
+  return `${route}:${clientIp}:${userAgent}`;
+}
+
+function enforceRateLimit(request: Request, route: string, limit: { max: number; windowMs: number }) {
+  const now = Date.now();
+
+  for (const [key, bucket] of RATE_LIMIT_BUCKETS.entries()) {
+    if (bucket.resetAt <= now) RATE_LIMIT_BUCKETS.delete(key);
+  }
+
+  const key = rateLimitKey(request, route);
+  const existing = RATE_LIMIT_BUCKETS.get(key);
+  if (!existing || existing.resetAt <= now) {
+    RATE_LIMIT_BUCKETS.set(key, { count: 1, resetAt: now + limit.windowMs });
+    return;
+  }
+
+  existing.count += 1;
+  if (existing.count > limit.max) {
+    throw new ApiError(429, "rate_limited", "Too many availability requests. Please try again soon.");
+  }
 }
 
 function getSupabaseAdmin(): SupabaseClient {
@@ -600,42 +644,20 @@ function scheduleWindowForRecord(record: Record<string, unknown>, timezone = DEF
   );
 }
 
-function publicAvailabilityResult(status: string, reasonCode?: string) {
+function publicAvailabilityResult(status: string, _reasonCode?: string) {
   const safeStatus = PUBLIC_AVAILABILITY_STATUSES.has(status) ? status : "contact_required";
-  const result: Record<string, string> = {
+  return {
     status: safeStatus,
     message: PUBLIC_AVAILABILITY_MESSAGES[safeStatus] ?? PUBLIC_AVAILABILITY_MESSAGES.contact_required,
     checked_at: new Date().toISOString(),
   };
-
-  if (reasonCode) result.reason_code = reasonCode;
-  return result;
 }
 
-function submittedAvailabilitySnapshotFromBody(body: Payload) {
-  const status = optionalString(body, [
-    "availabilityStatusAtSubmission",
-    "availability_status_at_submission",
-    "availability-status-at-submission",
-    "availabilityStatus",
-    "availability_status",
-  ], 32);
-
-  if (!status || !PUBLIC_AVAILABILITY_STATUSES.has(status)) return null;
-
-  const checkedAt = optionalString(body, [
-    "availabilityCheckedAt",
-    "availability_checked_at",
-    "availability-checked-at",
-    "availabilityCheckedAtSubmission",
-    "availability_checked_at_submission",
-  ], 80);
-  const parsedCheckedAt = checkedAt ? Date.parse(checkedAt) : NaN;
-
-  return {
-    status,
-    checked_at: Number.isNaN(parsedCheckedAt) ? new Date().toISOString() : new Date(parsedCheckedAt).toISOString(),
-  };
+function publicAvailabilityStatusForEventConflicts(events: Array<Record<string, unknown>>) {
+  const statuses = events.map((event) => normalizeEventStatus(String(event.status || "")));
+  if (statuses.includes("confirmed")) return "unavailable";
+  if (statuses.some((status) => status === "pending" || status === "hold")) return "pending";
+  return null;
 }
 
 function validateTimeZone(timezone: string) {
@@ -704,6 +726,13 @@ function availabilityInputFromBody(body: Payload) {
       };
     }
 
+    if (!isAvailabilityDateWithinHorizon(eventDate)) {
+      return {
+        ok: false,
+        result: publicAvailabilityResult("contact_required", "outside_supported_date_range"),
+      };
+    }
+
     if (!timezone) {
       return {
         ok: false,
@@ -750,6 +779,16 @@ function availabilityInputFromBody(body: Payload) {
     }
     throw error;
   }
+}
+
+function isAvailabilityDateWithinHorizon(eventDate: string) {
+  const requested = Date.parse(`${eventDate}T00:00:00Z`);
+  if (Number.isNaN(requested)) return false;
+
+  const today = new Date();
+  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const maxUtc = todayUtc + AVAILABILITY_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000;
+  return requested >= todayUtc && requested <= maxUtc;
 }
 
 function eventConflictSummary(event: Record<string, unknown>) {
@@ -2353,32 +2392,34 @@ async function evaluatePublicAvailability(
   try {
     const { data: timedEvents, error: timedEventsError } = await supabase
       .from("events")
-      .select("id")
-      .eq("status", "confirmed")
+      .select("id, status")
+      .in("status", EVENT_BLOCKING_STATUS_QUERY)
       .lt("start_at", input.endAt)
       .gt("end_at", input.startAt)
-      .limit(1);
+      .limit(100);
 
     if (timedEventsError) throw timedEventsError;
-    if ((timedEvents ?? []).length > 0) {
-      return publicAvailabilityResult("unavailable", "booked_event_conflict");
+    const timedEventStatus = publicAvailabilityStatusForEventConflicts((timedEvents ?? []) as Record<string, unknown>[]);
+    if (timedEventStatus) {
+      return publicAvailabilityResult(timedEventStatus, "event_conflict");
     }
 
     const { data: legacyEvents, error: legacyEventsError } = await supabase
       .from("events")
-      .select("id, event_date, start_time, end_time, start_at, end_at, timezone")
+      .select("id, status, event_date, start_time, end_time, start_at, end_at, timezone")
       .in("event_date", nearbyIsoDates(input.eventDate))
-      .eq("status", "confirmed")
+      .in("status", EVENT_BLOCKING_STATUS_QUERY)
       .limit(100);
 
     if (legacyEventsError) throw legacyEventsError;
-    const hasLegacyConflict = (legacyEvents ?? []).some((event) => {
+    const legacyConflicts = ((legacyEvents ?? []) as Record<string, unknown>[]).filter((event) => {
       const eventWindow = scheduleWindowForRecord(event as Record<string, unknown>, input.timezone);
       return eventWindow && isoWindowsOverlap(input.startAt, input.endAt, eventWindow.startAt, eventWindow.endAt);
     });
 
-    if (hasLegacyConflict) {
-      return publicAvailabilityResult("unavailable", "booked_event_conflict");
+    const legacyEventStatus = publicAvailabilityStatusForEventConflicts(legacyConflicts);
+    if (legacyEventStatus) {
+      return publicAvailabilityResult(legacyEventStatus, "event_conflict");
     }
 
     const { data: blocks, error: blocksError } = await supabase
@@ -2448,16 +2489,6 @@ async function availabilitySnapshotForBooking(supabase: SupabaseClient, body: Pa
     };
   }
 
-  const submittedSnapshot = submittedAvailabilitySnapshotFromBody(body);
-  if (submittedSnapshot) {
-    return {
-      requested_start_at: parsed.input.startAt,
-      requested_end_at: parsed.input.endAt,
-      availability_status_at_submission: submittedSnapshot.status,
-      availability_checked_at: submittedSnapshot.checked_at,
-    };
-  }
-
   const result = await evaluatePublicAvailability(supabase, parsed.input);
   return {
     requested_start_at: parsed.input.startAt,
@@ -2468,6 +2499,7 @@ async function availabilitySnapshotForBooking(supabase: SupabaseClient, body: Pa
 }
 
 async function checkPublicAvailability(request: Request, supabase: SupabaseClient) {
+  enforceRateLimit(request, "availability-check", AVAILABILITY_CHECK_RATE_LIMIT);
   const body = await readJson(request);
   const parsed = availabilityInputFromBody(body);
 
@@ -2478,6 +2510,7 @@ async function checkPublicAvailability(request: Request, supabase: SupabaseClien
 }
 
 async function fetchPublicAvailability(request: Request, supabase: SupabaseClient) {
+  enforceRateLimit(request, "availability-feed", PUBLIC_AVAILABILITY_FEED_RATE_LIMIT);
   const url = new URL(request.url);
   const limit = numericLimit(url, 20, 100);
   const today = new Date().toISOString().slice(0, 10);
@@ -2488,6 +2521,7 @@ async function fetchPublicAvailability(request: Request, supabase: SupabaseClien
     .from("events")
     .select("event_type, event_date, start_time, end_time, status, visibility")
     .gte("event_date", fromDate)
+    .eq("visibility", "public")
     .in("status", ["pending", "confirmed", "hold"]);
 
   if (toDate) query = query.lte("event_date", toDate);

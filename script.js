@@ -15,6 +15,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const publicAvailabilityStatuses = new Set(['available', 'pending', 'unavailable', 'contact_required']);
   const readTrimmedValue = (field) => (field && field.value ? field.value.trim() : '');
+  const minutesFromTimeValue = (value) => {
+    if (!value) return null;
+    const [hours, minutes] = String(value).split(':').map((part) => Number.parseInt(part, 10));
+    if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+    return hours * 60 + minutes;
+  };
+  const isOvernightWindow = (startTime, endTime) => {
+    const start = minutesFromTimeValue(startTime);
+    const end = minutesFromTimeValue(endTime);
+    return start !== null && end !== null && end <= start;
+  };
   const todayInputValue = () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -125,16 +136,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const endsNextDay = (startTime, endTime) => {
-      const start = minutesFromTime(startTime);
-      const end = minutesFromTime(endTime);
-      return start !== null && end !== null && end <= start;
+      return isOvernightWindow(startTime, endTime);
     };
 
     const minutesFromTime = (value) => {
-      if (!value) return null;
-      const [hours, minutes] = String(value).split(':').map((part) => Number.parseInt(part, 10));
-      if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
-      return hours * 60 + minutes;
+      return minutesFromTimeValue(value);
     };
 
     const setAvailabilityStatus = (message) => {
@@ -251,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    const renderAvailabilityResult = (result, isError = false) => {
+    const renderAvailabilityResult = (result, isError = false, options = {}) => {
       if (!resultEl) return;
       const status = isError ? 'contact_required' : normalizeAvailabilityStatus(result?.status);
       const copy = availabilityCopy[status] || availabilityCopy.contact_required;
@@ -281,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
       heading.append(title, badge);
       resultEl.append(heading, body, note);
       resultEl.hidden = false;
-      if (continueButton) continueButton.hidden = false;
+      if (continueButton) continueButton.hidden = options.allowContinue === false;
     };
 
     const checkerPayload = () => ({
@@ -335,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAvailabilityResult({
           status: 'contact_required',
           message: 'Add the required event details to check availability.'
-        }, true);
+        }, true, { allowContinue: false });
         return;
       }
 

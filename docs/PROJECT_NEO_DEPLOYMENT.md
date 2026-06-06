@@ -335,7 +335,15 @@ Production Branch: main
 For the initial `tookoldweb.vercel.app` launch, the production public browser values are also mirrored in `vercel.json` so the static build can complete even before dashboard-level Vercel environment variables are entered. Do not add server-only secrets to `vercel.json`.
 
 5. Keep `SUPABASE_SERVICE_ROLE_KEY`, payment secrets, and calendar secrets out of Vercel unless Project Neo later adds private Vercel server code.
-6. Enable Vercel Authentication or Deployment Protection for preview deployments, and decide whether production admin/client URLs should also require Vercel-level access in addition to Supabase Auth. Public marketing pages must remain public.
+6. Keep preview deployments behind Vercel Authentication or Deployment Protection where available. For production MVP, do not enable global Vercel Authentication or production Deployment Protection because public marketing, booking, contact, and availability routes must stay reachable.
+
+### Vercel Protection Decision
+
+Final decision recorded 2026-06-01: production remains a public static Vercel deployment for MVP launch. Supabase Auth, `project-neo-api` route authorization, and Postgres RLS are the required data boundary for admin, invoice/payment, and client portal data.
+
+Admin, auth, and client portal static shells may remain reachable by direct URL, but they must stay `noindex,nofollow`, excluded from private telemetry, hidden from public navigation where applicable, and unable to render protected records before a successful authenticated API response. If Project Neo later splits the admin app into a separate deployment, adds middleware, or enables path-scoped host protection, Launchpad, Gatekeeper, and Shield should revisit this decision.
+
+Decision record: `docs/decisions/2026-06-01-vercel-protection-decision.md`.
 
 ### Vercel Speed Insights
 
@@ -353,9 +361,10 @@ For the current static architecture, Speed Insights is integrated by the static 
 Vercel project status:
 
 - Speed Insights route check: `https://tookoldweb.vercel.app/_vercel/speed-insights/script.js` returns `200`.
-- Vercel project metadata confirms recent `tookoldweb` deployments for Speed Insights, but the current production page references a standalone `speed-insights.js` file from a Vercel bot deployment rather than this local build-injection implementation.
-- Current production `client-portal.html` also references that standalone `speed-insights.js`; treat this as deployment drift and promote the local build-injection version before relying on private-page telemetry exclusions.
-- Vercel tracks enabled Speed Insights data across preview and production deployments, so review both environments after the next deployment.
+- Production deployment `dpl_7WvwHohRDsFwmgSBaHK6zXF486Er` was promoted from clean preview deployment `dpl_3jfap25hdwAVrHdH68Pd46UST6jJ` on 2026-06-01.
+- Launchpad verified the production homepage includes the intended `/_vercel/speed-insights/script.js` public-page script.
+- Launchpad verified checked production admin login and client portal clean URLs do not include `speed-insights.js` or `/_vercel/speed-insights/script.js`.
+- Vercel tracks enabled Speed Insights data across preview and production deployments, so Shield and Bug Hunter should still review the live production result after promotion.
 
 No server-only secrets, service role keys, payment secrets, OAuth secrets, Apple private keys, webhook secrets, or Supabase private credentials are required for Speed Insights.
 
@@ -389,28 +398,41 @@ Preview deployments should prove a change without touching live customer data.
 
 ## Production Launch Checklist
 
-- [ ] `main` is up to date and contains only approved release changes.
-- [ ] `npm run build` succeeds locally.
-- [ ] `npm run validate` succeeds locally.
-- [ ] Staging preview has been tested on desktop and mobile.
-- [ ] Booking form writes to Supabase and creates an admin-reviewable inquiry.
-- [ ] Contact form writes to Supabase or has an intentional fallback.
-- [ ] Admin login works for the owner account.
-- [ ] Google OAuth login works in staging and production.
-- [ ] Apple OAuth login works in staging and production, or is hidden until configured.
-- [ ] Password reset email returns to `auth-reset-password.html`.
-- [ ] Passkey registration/sign-in is tested on at least one supported desktop browser and one supported mobile platform, or passkey UI remains optional.
-- [ ] Client portal login behavior is verified with a test client.
-- [ ] Supabase Auth owner account has MFA enabled.
-- [ ] Production `PROJECT_NEO_ALLOWED_ORIGIN` is the live site origin, not `*`.
-- [ ] Production Supabase RLS policies and grants have been reviewed.
-- [ ] Supabase advisors show no unresolved security issues.
-- [ ] Payment provider is in live mode only after test-mode payment flow is verified.
-- [ ] Calendar integration uses the production calendar only after staging tests pass.
-- [ ] Domain DNS and HTTPS are active.
-- [ ] `robots.txt` and noindex headers are correct for public/admin/client pages.
-- [ ] A recent database backup or restore point exists.
-- [ ] The previous successful deployment is identified for rollback.
+Current official launch decision as of 2026-06-06: NO-GO.
+
+Do not mark Project Neo as officially launched until every unchecked critical item below is resolved or explicitly deferred by the owner.
+
+- [x] Production Vercel site is reachable at `https://tookoldweb.vercel.app`.
+- [x] Production Supabase schema is applied and verified.
+- [x] `availability_blocks` RLS helper mismatch is fixed in production.
+- [x] Production `project-neo-api` full-route version 3 is active.
+- [x] Public API smoke checks pass for health, availability, booking/contact writes, media, mixes, and service packages.
+- [x] Public booking/contact production writes were verified with QA data.
+- [x] Public SEO/accessibility launch pass is documented for the current production target.
+- [x] Client portal is deferred from official public launch and removed from public navigation.
+- [x] Live Square/Stripe collection is deferred; Project Neo must not store card numbers, CVV values, or raw cardholder data.
+- [x] Intended production release is promoted and tied to release commit `30bca54e7a6eddb20dba331884443801f4faf0f6`.
+- [x] Overnight booking UI validation is aligned with the production API and retested by Booker + Bug Hunter on deployment `dpl_14DujRxbJBHLvyPrH9nHDVQfciUa`.
+- [ ] Current production Speed Insights/private-page telemetry posture is rechecked by Shield/Bug Hunter on deployment `dpl_14DujRxbJBHLvyPrH9nHDVQfciUa`.
+- [ ] Production owner email confirmation, first sign-in, and approved owner-controlled admin session are complete.
+- [ ] Admin booking inquiry review, booking status actions, invoice/payment review, and payment status updates are verified in production.
+- [ ] Approved production client session is available, or client portal success-path QA remains formally deferred outside official launch.
+- [ ] Production `PROJECT_NEO_ALLOWED_ORIGIN` and deployed CORS behavior are verified for the final launch domain.
+- [x] Host-level Vercel protection decision for admin/client static shells is recorded: production remains public; Supabase Auth, protected API routes, and RLS remain the private-data boundary.
+- [ ] Final launch domain decision is recorded: use `tookoldweb.vercel.app` or configure a custom domain before launch.
+- [x] Final production deploy ID, release commit, promotion timestamp, and rollback target are recorded in deployment notes.
+- [ ] Bug Hunter reruns final desktop/mobile production regression after approved-session QA and final security/domain decisions.
+- [ ] Shield records no launch-blocking public data, auth, secret, RLS, CORS, telemetry, or compliance-wording concerns.
+- [ ] Scribe finalizes changelog, deployment notes, agent status, launch-readiness summary, and final handoff.
+- [ ] Neo Prime declares GO only after every critical launch blocker passes or receives explicit owner-approved deferral.
+
+Still required before a future broader platform launch:
+
+- [ ] Google OAuth, Apple OAuth, password reset, and optional passkeys are verified if advertised for launch.
+- [ ] Supabase Auth owner account MFA posture is confirmed.
+- [ ] Supabase advisors show no unresolved launch-blocking security issues.
+- [ ] Calendar integration uses production calendar data only after staging tests pass.
+- [ ] Payment provider goes live only after hosted/tokenized provider flow, webhook verification, and test-mode validation are complete.
 
 ## Rollback Checklist
 

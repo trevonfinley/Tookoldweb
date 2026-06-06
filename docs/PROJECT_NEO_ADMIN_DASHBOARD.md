@@ -7,8 +7,11 @@ Mission Control is the private DJ Too Kold admin workspace for bookings, clients
 - Protected admin layout with Overview, Booking Inquiries, Clients, Events, Availability, Invoices, Payments, Venues, Media, and Settings.
 - Overview cards for new inquiries, confirmed bookings, upcoming events, open invoices, and balance due.
 - Booking inquiries table with status badges and a detail pane.
+- Booking inquiry detail actions for protected status updates and private admin review notes.
 - Basic event list with status filtering and empty states.
 - Availability management with upcoming events, availability blocks, a create-block form, block type filters, and conflict indicators.
+- Event and availability detail views surface API `conflict_warnings` plus dashboard-visible overlap checks.
+- Payment detail actions for protected payment status updates after processor confirmation.
 - Empty states for every section that has no records yet.
 
 ## Gatekeeper Notes

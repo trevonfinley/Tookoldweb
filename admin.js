@@ -12,6 +12,16 @@
   let supabaseClient = null;
 
   const BLOCKING_EVENT_STATUSES = new Set(["pending", "confirmed", "hold"]);
+  const BOOKING_STATUS_FLOW = Object.freeze({
+    new: ["reviewing", "cancelled"],
+    reviewing: ["quoted", "cancelled"],
+    quoted: ["deposit_requested", "confirmed", "cancelled"],
+    deposit_requested: ["confirmed", "cancelled"],
+    confirmed: ["completed", "cancelled"],
+    completed: [],
+    cancelled: [],
+  });
+  const PAYMENT_STATUS_OPTIONS = Object.freeze(["pending", "paid", "failed", "refunded"]);
 
   const state = {
     session: null,
@@ -152,6 +162,7 @@
         ["Date", (item) => [formatDate(item.event_date), formatTimeRange(item.start_time, item.end_time)].filter(Boolean).join(" / ") || "TBD"],
         ["Client", (item) => firstRelation(item.clients)?.full_name || "Unassigned"],
         ["Venue", (item) => item.venue_name || firstRelation(item.venues)?.name || item.location || "TBD"],
+        ["Conflict", (item) => createConflictBadge(getAvailabilityConflicts("event", item))],
         ["Status", (item) => createBadge(eventStatus(item))],
       ],
       details: (item) => {
@@ -171,6 +182,7 @@
           ["Timeline", item.timeline_notes],
           ["Notes", item.notes],
           ["Internal notes", item.internal_notes],
+          ["Conflicts", createConflictList(getAvailabilityConflicts("event", item))],
         ];
       },
     },
@@ -298,6 +310,8 @@
           ["Type", formatStatus(item.payment_type)],
           ["Provider", item.payment_provider],
           ["Provider reference", item.provider_payment_id],
+          ["Invoice status", invoice?.status ? createBadge(invoice.status) : ""],
+          ["Invoice balance", invoice?.balance_due_cents !== undefined ? formatMoney(invoice.balance_due_cents) : ""],
           ["Invoice", invoice?.invoice_number],
           ["Client", client?.full_name],
           ["Event", event?.title],
@@ -880,6 +894,63 @@
       };
     });
 
+    renderList("[data-list='admin-review']", buildAdminReviewQueue(), (item) => item);
+  }
+
+  function buildAdminReviewQueue() {
+    const queue = [];
+    const inquiries = (state.records["booking-inquiries"] || [])
+      .filter((item) => ["new", "reviewing"].includes(item.status || "new"))
+      .slice(0, 4);
+
+    inquiries.forEach((item) => {
+      queue.push({
+        title: `Review ${item.full_name || "new inquiry"}`,
+        meta: [
+          formatDate(item.event_date),
+          formatTimeRange(item.start_time, item.end_time),
+          item.event_type,
+          item.availability_status_at_submission ? `Availability: ${formatStatus(item.availability_status_at_submission)}` : "Availability not checked",
+        ].filter(Boolean).join(" / "),
+        badge: item.status || "new",
+      });
+    });
+
+    (state.records.events || []).forEach((item) => {
+      const conflicts = getAvailabilityConflicts("event", item);
+      if (conflicts.length === 0) return;
+      queue.push({
+        title: `Resolve conflict: ${item.title || "Event"}`,
+        meta: [formatAvailabilityWindow(item, "event"), item.venue_name || item.location].filter(Boolean).join(" / "),
+        badge: createConflictBadge(conflicts),
+      });
+    });
+
+    (state.records.invoices || [])
+      .filter((item) => Number(item.balance_due_cents || 0) > 0 && !["draft", "cancelled"].includes(item.status || ""))
+      .slice(0, 3)
+      .forEach((item) => {
+        const client = firstRelation(item.clients);
+        queue.push({
+          title: `Collect ${formatMoney(item.balance_due_cents)} ${item.invoice_number || "invoice"}`,
+          meta: [client?.full_name, item.due_date ? `Due ${formatDate(item.due_date)}` : ""].filter(Boolean).join(" / "),
+          badge: item.status || "sent",
+        });
+      });
+
+    (state.records.payments || [])
+      .filter((item) => ["pending", "failed"].includes(item.status || ""))
+      .slice(0, 3)
+      .forEach((item) => {
+        const invoice = firstRelation(item.invoices);
+        queue.push({
+          title: `${formatStatus(item.status)} payment ${formatMoney(item.amount_cents)}`,
+          meta: [invoice?.invoice_number, formatStatus(item.payment_type), item.payment_provider].filter(Boolean).join(" / "),
+          badge: item.status || "pending",
+        });
+      });
+
+    return queue.slice(0, 8);
   }
 
   function renderAvailabilitySchedule() {
@@ -1213,7 +1284,191 @@
       list.append(row);
     });
 
+    const actions = createDetailActions(key, item);
     detail.append(header, list);
+    if (actions) detail.append(actions);
+  }
+
+  function createDetailActions(key, item) {
+    if (key === "booking-inquiries") return createBookingReviewActions(item);
+    if (key === "payments") return createPaymentStatusActions(item);
+    return null;
+  }
+
+  function createBookingReviewActions(item) {
+    const form = document.createElement("form");
+    form.className = "admin-action-panel";
+    form.noValidate = true;
+
+    const heading = document.createElement("h4");
+    heading.textContent = "Admin Review";
+    const help = document.createElement("p");
+    help.textContent = "Move the inquiry through the booking pipeline and keep private admin notes attached to the lead.";
+
+    const statusField = createSelectField(
+      "Status",
+      "status",
+      bookingStatusOptions(item.status || "new"),
+      item.status || "new",
+    );
+    const notesField = createTextareaField("Internal notes", "internalNotes", item.internal_notes || "");
+    const actions = createActionRow("Save Review");
+    const button = actions.querySelector("button");
+    const message = actions.querySelector("[data-action-status]");
+
+    form.append(heading, help, statusField, notesField, actions);
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!item.id) return;
+
+      const body = {
+        status: formValue(form, "status"),
+        internalNotes: formValue(form, "internalNotes").trim() || null,
+      };
+      await submitAdminAction({
+        button,
+        message,
+        path: `/admin/booking-inquiries/${item.id}/status`,
+        body,
+        sectionKey: "booking-inquiries",
+        successMessage: "Booking inquiry updated.",
+      });
+    });
+
+    return form;
+  }
+
+  function createPaymentStatusActions(item) {
+    const form = document.createElement("form");
+    form.className = "admin-action-panel";
+    form.noValidate = true;
+
+    const heading = document.createElement("h4");
+    heading.textContent = "Payment Review";
+    const help = document.createElement("p");
+    help.textContent = "Update payment state after confirming the processor record. Project Neo stores references only, never card data.";
+
+    const statusField = createSelectField("Status", "status", PAYMENT_STATUS_OPTIONS, item.status || "pending");
+    const dateField = createInputField("Payment date", "paymentDate", "date", item.payment_date || "");
+    const actions = createActionRow("Update Payment");
+    const button = actions.querySelector("button");
+    const message = actions.querySelector("[data-action-status]");
+
+    form.append(heading, help, statusField, dateField, actions);
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!item.id) return;
+
+      const body = { status: formValue(form, "status") };
+      const paymentDate = formValue(form, "paymentDate");
+      if (paymentDate) body.paymentDate = paymentDate;
+      await submitAdminAction({
+        button,
+        message,
+        path: `/admin/payments/${item.id}/status`,
+        body,
+        sectionKey: "payments",
+        successMessage: "Payment status updated.",
+      });
+    });
+
+    return form;
+  }
+
+  function bookingStatusOptions(currentStatus) {
+    return [...new Set([currentStatus, ...(BOOKING_STATUS_FLOW[currentStatus] || [])])];
+  }
+
+  function formValue(form, name) {
+    const field = form.elements.namedItem(name);
+    return field && "value" in field ? String(field.value || "") : "";
+  }
+
+  function createSelectField(label, name, options, selectedValue) {
+    const field = document.createElement("label");
+    field.className = "admin-filter-field";
+    const labelText = document.createElement("span");
+    labelText.textContent = label;
+    const select = document.createElement("select");
+    select.name = name;
+    options.forEach((value) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = formatStatus(value);
+      option.selected = value === selectedValue;
+      select.append(option);
+    });
+    field.append(labelText, select);
+    return field;
+  }
+
+  function createInputField(label, name, type, value = "") {
+    const field = document.createElement("label");
+    field.className = "admin-filter-field";
+    const labelText = document.createElement("span");
+    labelText.textContent = label;
+    const input = document.createElement("input");
+    input.name = name;
+    input.type = type;
+    input.value = value;
+    field.append(labelText, input);
+    return field;
+  }
+
+  function createTextareaField(label, name, value = "") {
+    const field = document.createElement("label");
+    field.className = "admin-filter-field";
+    const labelText = document.createElement("span");
+    labelText.textContent = label;
+    const textarea = document.createElement("textarea");
+    textarea.name = name;
+    textarea.rows = 4;
+    textarea.value = value;
+    field.append(labelText, textarea);
+    return field;
+  }
+
+  function createActionRow(buttonText) {
+    const actions = document.createElement("div");
+    actions.className = "admin-form-actions";
+    const button = document.createElement("button");
+    button.className = "btn-secondary";
+    button.type = "submit";
+    button.textContent = buttonText;
+    const message = document.createElement("p");
+    message.className = "admin-inline-status";
+    message.dataset.actionStatus = "";
+    message.setAttribute("aria-live", "polite");
+    actions.append(button, message);
+    return actions;
+  }
+
+  async function submitAdminAction({ button, message, path, body, sectionKey, successMessage }) {
+    try {
+      if (!state.session) throw new Error("Admin session is not ready.");
+      setButtonBusy(button, true);
+      if (message) {
+        message.textContent = "Saving...";
+        message.dataset.status = "";
+      }
+
+      await adminFetch(path, state.session, {
+        method: "PATCH",
+        body,
+      });
+      await loadAdminData(state.session);
+      renderDashboard();
+      showSection(sectionKey);
+      setStatus(successMessage, "success");
+    } catch (error) {
+      if (message) {
+        message.textContent = error.message || "Could not save admin update.";
+        message.dataset.status = "error";
+      }
+      setStatus(error.message || "Could not save admin update.", "error");
+    } finally {
+      setButtonBusy(button, false);
+    }
   }
 
   function renderList(selector, items, mapItem) {
@@ -1321,15 +1576,22 @@
 
   function getAvailabilityConflicts(type, item) {
     const target = getAvailabilityWindow(type, item);
-    if (!target) return [];
+    const conflicts = getApiConflictWarnings(item);
+    const seen = new Set(conflicts.map((conflict) => `${conflict.type}:${conflict.id || conflict.title}:${conflict.window}`));
+    const addConflict = (conflict) => {
+      const key = `${conflict.type}:${conflict.id || conflict.title}:${conflict.window}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      conflicts.push(conflict);
+    };
+    if (!target) return conflicts;
 
-    const conflicts = [];
     (state.records.events || []).forEach((event) => {
       if (type === "event" && event.id === item.id) return;
       if (!BLOCKING_EVENT_STATUSES.has(eventStatus(event))) return;
       const candidate = getAvailabilityWindow("event", event);
       if (!candidate || !windowsOverlap(target, candidate)) return;
-      conflicts.push({
+      addConflict({
         id: event.id,
         type: "event",
         title: event.title || "Untitled event",
@@ -1342,7 +1604,7 @@
       if (type === "block" && block.id === item.id) return;
       const candidate = getAvailabilityWindow("block", block);
       if (!candidate || !windowsOverlap(target, candidate)) return;
-      conflicts.push({
+      addConflict({
         id: block.id,
         type: "availability block",
         title: block.title || "Availability block",
@@ -1352,6 +1614,29 @@
     });
 
     return conflicts;
+  }
+
+  function getApiConflictWarnings(item) {
+    const warnings = Array.isArray(item?.conflict_warnings) ? item.conflict_warnings : [];
+    return warnings.map((conflict) => {
+      const type = String(conflict.type || "conflict").replace(/_/g, " ");
+      const startAt = conflict.startAt || conflict.start_at;
+      const endAt = conflict.endAt || conflict.end_at;
+      const eventDate = conflict.eventDate || conflict.event_date;
+      const startTime = conflict.startTime || conflict.start_time;
+      const endTime = conflict.endTime || conflict.end_time;
+      const window = startAt && endAt
+        ? formatDateTimeRange(startAt, endAt, false)
+        : [formatDate(eventDate), formatTimeRange(startTime, endTime)].filter(Boolean).join(" / ");
+
+      return {
+        id: conflict.id,
+        type,
+        title: conflict.title || (type === "event" ? "Event" : "Availability block"),
+        status: conflict.status || "conflict",
+        window,
+      };
+    });
   }
 
   function getAvailabilityWindow(type, item) {

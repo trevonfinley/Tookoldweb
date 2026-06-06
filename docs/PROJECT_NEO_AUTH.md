@@ -34,7 +34,22 @@ Admin access means `owner` or `admin` with `is_active = true`.
 6. The Edge Function verifies the token and checks `public.users` for active `owner` or `admin` access.
 7. Non-admin, inactive, missing, or expired sessions are signed out and sent back to `admin-login.html`.
 
-The public site does not expose admin navigation, and admin/auth pages are marked `noindex,nofollow`. Static HTML files can still be guessed on a public host, so the security boundary is the Supabase session, the Edge Function role check, and Postgres RLS. Production hosting should also block or isolate `/admin-*` and `/auth-*` paths when host route protection is available.
+The public site does not expose admin navigation, and admin/auth pages are marked `noindex,nofollow`. Static HTML files can still be guessed on a public host, so the security boundary is the Supabase session, the Edge Function role check, and Postgres RLS.
+
+Final Vercel protection decision recorded 2026-06-01: production stays publicly reachable for MVP launch, with no global Vercel Authentication or production Deployment Protection wall. Admin, auth, and client portal shells must not render private records until authenticated API authorization succeeds. Preview/staging deployments should stay behind Vercel Authentication or Deployment Protection where available. See `docs/decisions/2026-06-01-vercel-protection-decision.md`.
+
+## Production Owner Bootstrap Status
+
+Gatekeeper bootstrapped the first production owner identity on June 3, 2026:
+
+- One Supabase Auth email/password identity exists for the configured production admin email.
+- Email auto-confirm remains disabled, and Supabase Auth logs confirm the owner-controlled confirmation email was sent.
+- One matching active `public.users` profile exists with role `owner`.
+- The linked identity passes the existing `private.is_project_neo_admin()` authorization predicate.
+- No approved production admin session exists yet because email confirmation and first sign-in remain pending.
+- No password, access token, refresh token, or private session material was retained or documented.
+
+After the owner completes confirmation, Gatekeeper and Bug Hunter must verify production `/admin/me`, dashboard access, sign-out, and password recovery. The browser session must remain owner-controlled and must not be shared through chat or documentation.
 
 ## Auth Pages and Helpers
 
@@ -158,6 +173,7 @@ supabase start
 7. Keep `SUPABASE_SERVICE_ROLE_KEY`, Supabase secret keys, OAuth client secrets, Apple private keys/client secrets, payment secrets, webhook secrets, and calendar secrets server-side only.
 8. Create the owner account in Supabase Auth and then create the matching `public.users` owner row.
 9. Verify that a newly created Auth user has no admin dashboard access until an owner/admin assigns the role row.
+10. Verify the recorded Vercel protection posture: production static shells remain public but private-data safe, and preview/staging deployments are protected where available.
 
 ## Google OAuth Checklist
 
@@ -291,8 +307,8 @@ Gatekeeper verification on May 25, 2026 found:
 - `admin-login`, `admin-dashboard`, and `client-portal` return static HTML with `X-Robots-Tag: noindex, nofollow`.
 - Static admin/client HTML is not the data boundary. Private data must stay behind Supabase Auth, `/admin/*` or `/portal/*` Edge Function checks, and Postgres RLS.
 - Checked-in Vercel and Netlify header config should cover both clean URLs and `.html` URLs for admin, client portal, and auth workflow pages.
-- Unauthenticated live API verification could not prove deployed route behavior because the configured Supabase Edge Function URL returned `404 function not found`. Launchpad must confirm the production Edge Function deploy before final auth QA.
-- If route-level protection is required for previews or production admin/client pages, Launchpad should enable Vercel Authentication or Deployment Protection at the project level. That setting is not fully enforced by this static repo config.
+- Historical note: unauthenticated live API verification on May 25, 2026 could not prove deployed route behavior because the configured Supabase Edge Function URL returned `404 function not found`. Stack Mason later deployed and verified the full production `project-neo-api`.
+- Final decision recorded 2026-06-01: production will not use global Vercel Authentication or production Deployment Protection for MVP launch. Preview/staging deployments should use Vercel Authentication or Deployment Protection where available, and production private data must stay protected by Supabase Auth, `/admin/*` and `/portal/*` Edge Function checks, and RLS.
 
 ## Notes for Other Engineers
 

@@ -1,9 +1,34 @@
 # Project Neo Agent Status
 
-Last updated: 2026-05-29
+Last updated: 2026-06-06
 
 ## Recent Handoffs
 
+- 2026-06-06: Scribe + Neo Prime updated launch tracker, changelog, agent status, deployment notes, and release notes; current decision remains NO-GO because not all critical blockers have passed. Handoff: `docs/agent-handoffs/2026-06-06-scribe-neo-prime-launch-readiness-rollup.md`.
+- 2026-06-06: Booker + Bug Hunter verified the final production deployment `dpl_14DujRxbJBHLvyPrH9nHDVQfciUa` still serves overnight-aware booking UI behavior and successfully writes public booking/contact submissions. Handoff: `docs/agent-handoffs/2026-06-06-booker-bug-hunter-final-booking-contact-production-qa.md`.
+- 2026-06-03: Pixel Frost and Launchpad deployed the deferred client portal visibility fix; all nine production public pages now hide Portal links and the direct portal displays invitation-only beta copy with `noindex,nofollow`. Handoff: `docs/agent-handoffs/2026-06-03-pixel-frost-public-portal-visibility-deploy.md`.
+- 2026-06-03: Concierge verified client portal public visibility. Local source/build correctly hide Portal links and include private-beta copy, but live production still advertises Portal links and lacks the beta notice; Launchpad promotion and Bug Hunter regression are required. Handoff: `docs/agent-handoffs/2026-06-03-concierge-public-portal-visibility-verification.md`.
+- 2026-06-03: Ledger re-attempted the approved-session admin/invoice/payment verification. No approved owner session was available; protected routes passed unauthorized checks, approved QA booking/contact rows remain ready, and production still has zero invoice/payment records. Handoff: `docs/agent-handoffs/2026-06-03-ledger-approved-admin-session-verification.md`.
+- 2026-06-03: Mission Control re-verified production admin, booking inquiry, invoice, and payment workflow readiness. Protected-route boundaries pass and approved QA booking/contact rows exist, but authenticated success paths remain blocked because the owner Auth identity is unconfirmed/unsigned-in and production has zero invoice/payment records. Handoff: `docs/agent-handoffs/2026-06-03-mission-control-authenticated-admin-workflow-verification.md`.
+- 2026-06-03: Gatekeeper bootstrapped the first production Supabase Auth owner identity and matching active `public.users` owner profile. The admin predicate passes and the confirmation email was sent; approved session QA remains pending owner confirmation. Handoff: `docs/agent-handoffs/2026-06-03-gatekeeper-production-owner-bootstrap.md`.
+- 2026-06-01: Bug Hunter reran official-launch production regression against deployment `dpl_5QTuMWv2QYUKBqigZkpf6Zbq3m8c`, confirmed overnight booking now passes, and documented remaining NO-GO blockers: private-page Speed Insights regression, public Portal links, and authenticated QA access. Handoff: `docs/agent-handoffs/2026-06-01-bug-hunter-official-launch-regression-rerun.md`.
+- 2026-06-02: Gatekeeper recorded the auth/authorization handoff for the final Vercel protection decision, including protected route behavior, redirect/env notes, security risks, and affected-agent follow-up. Handoff: `docs/agent-handoffs/2026-06-02-gatekeeper-vercel-protection-decision.md`.
+- 2026-06-01: Launchpad/Gatekeeper/Shield recorded the final Vercel protection decision: production remains public for MVP launch, preview/staging should use Vercel protection where available, and Supabase Auth plus protected API routes and RLS remain the private-data boundary. Handoff: `docs/agent-handoffs/2026-06-01-launchpad-vercel-protection-decision.md`.
+- 2026-06-01: Ledger attempted authenticated admin, invoice, and payment workflow verification; production protected-route boundaries passed, but positive authenticated workflow QA is blocked because there are zero Auth users, zero Project Neo users, and zero active owner/admin records. Handoff: `docs/agent-handoffs/2026-06-01-ledger-authenticated-admin-invoice-payment-workflow-verification.md`.
+- 2026-06-01: Pixel Frost fixed and deployed overnight booking UI validation so cross-midnight public booking windows are no longer rejected in production. Handoff: `docs/agent-handoffs/2026-06-01-pixel-frost-overnight-booking-ui-validation.md`.
+- 2026-06-01: Booker deployed the overnight-aware booking availability checker UI to production, verified the live booking artifact, and smoke-tested the production overnight availability API payload. Handoff: `docs/agent-handoffs/2026-06-01-booker-overnight-booking-ui-deploy.md`.
+- 2026-06-01: Launchpad promoted the clean Vercel deployment that removes private-page Speed Insights drift and verified public/private telemetry behavior on production. Handoff: `docs/agent-handoffs/2026-06-01-launchpad-clean-speed-insights-promotion.md`.
+- 2026-06-01: Scribe consolidated launch documentation, updated launch checklist/deployment notes/README/changelog/status, verified current launch-impacting handoff coverage, and prepared Neo Prime's final NO-GO launch-readiness summary. Handoff: `docs/agent-handoffs/2026-06-01-scribe-launch-documentation-consolidation.md`.
+- 2026-06-01: Ledger verified launch invoice/payment tracking readiness, confirmed protected invoice/payment routes and sensitive card-field rejection, and explicitly deferred live Square/Stripe collection pending provider implementation and authenticated QA. Handoff: `docs/agent-handoffs/2026-06-01-ledger-launch-invoice-payment-verification.md`.
+- 2026-06-01: Concierge deferred the client portal from official launch to hidden/private beta, removed public Portal navigation/footer entry points, marked direct portal login copy as invitation-only, and documented approved client-session QA as the launch blocker. Handoff: `docs/agent-handoffs/2026-06-01-concierge-client-portal-launch-deferral.md`.
+- 2026-06-01: Mission Control completed launch-critical admin workflow controls for booking inquiry review, event/availability conflicts, invoice/payment review, payment status updates, and public checker validation behavior. Handoff: `docs/agent-handoffs/2026-06-01-mission-control-admin-workflows.md`.
+- 2026-05-31: Bug Hunter completed official-launch desktop/mobile production regression against `https://tookoldweb.vercel.app`, verified public booking/contact production writes and unauthenticated admin/client protection, and documented NO-GO launch blockers. Handoff: `docs/agent-handoffs/2026-05-31-bug-hunter-official-launch-regression.md`.
+- 2026-05-31: Launchpad prepared the official production deployment gate, confirmed Vercel/Supabase deployment settings, documented rollback targets, and held promotion until launch blockers clear. Handoff: `docs/agent-handoffs/2026-05-31-launchpad-official-production-readiness.md`.
+- 2026-05-31: Stack Mason replaced reduced-mode `project-neo-api` with full production version 3, verified public routes against production schema, and documented authenticated admin/portal follow-up. Handoff: `docs/agent-handoffs/2026-05-31-stack-mason-full-production-api-deploy.md`.
+- 2026-05-31: Shield completed launch security review, hardened public availability responses/abuse controls/CORS defaults, and documented remaining deployment/authenticated-QA blockers. Handoff: `docs/agent-handoffs/2026-05-31-shield-launch-security-review.md`.
+- 2026-05-31: Data Knox applied the production Supabase schema, fixed the `availability_blocks` RLS helper mismatch, hardened browser-role table grants, and documented affected-agent follow-up. Handoff: `docs/agent-handoffs/2026-05-31-data-knox-production-supabase-schema.md`.
+- 2026-05-31: Stack Mason deployed a reduced production `project-neo-api` Supabase Edge Function for Sync's overnight availability update and documented remaining schema/full-function blockers. Handoff: `docs/agent-handoffs/2026-05-31-stack-mason-sync-backend-function-deploy.md`.
+- 2026-05-30: Bug Hunter completed local overnight conflict QA for Saturday 10 PM-Sunday 2 AM availability, next-day conflicts, blocks, admin warnings, and booking UI validation. Handoff: `docs/agent-handoffs/2026-05-30-bug-hunter-overnight-conflict-qa.md`.
 - 2026-05-29: Launchpad added Vercel Speed Insights static-site integration for public Vercel-built pages and documented the security/deployment impact. Handoff: `docs/agent-handoffs/2026-05-29-launchpad-vercel-speed-insights.md`.
 - 2026-05-26: Scribe created the Project Neo Agent Handoff Protocol package, including `AGENTS.md`, `docs/agent-handoffs/HANDOFF_TEMPLATE.md`, README guidance, changelog notes, and this status update. Handoff: `docs/agent-handoffs/2026-05-26-scribe-agent-handoff-protocol.md`.
 - 2026-05-26: Bug Hunter documented live production desktop/mobile regression results and the production API launch blocker. Handoff: `docs/agent-handoffs/2026-05-26-bug-hunter-production-regression.md`.
@@ -11,22 +36,58 @@ Last updated: 2026-05-29
 - 2026-05-26: Stack Mason documented production backend API verification blockers. Handoff: `docs/agent-handoffs/2026-05-26-stack-mason-production-backend-verification.md`.
 - 2026-05-26: Shield documented Availability Checker security review findings and required launch-blocking RLS follow-up. Handoff: `docs/agent-handoffs/2026-05-26-shield-availability-checker-security-review.md`.
 
-## Bug Hunter
+## Scribe
 
-Status: Live production desktop/mobile regression completed; launch is blocked by missing production API function.
+Status: Launch documentation updated for 2026-06-06; official launch recommendation remains NO-GO because all critical blockers have not passed.
 
 Latest update:
-- Confirmed `tookoldweb.vercel.app` now serves the Project Neo / DJ Too Kold production site.
-- Verified tested public routes resolve, the official logo renders, empty booking/contact validation works, mobile menu opens, mobile booking has no horizontal overflow, and unauthenticated admin dashboard access redirects to admin login in browser testing.
-- Confirmed the production API function is still unavailable: availability checker, booking/contact routes, dynamic media/mixes, and availability feeds return missing-function/CORS failures.
-- Added handoff: `docs/agent-handoffs/2026-05-26-bug-hunter-production-regression.md`.
+- Updated `docs/PROJECT_NEO_LAUNCH_READINESS.md` with Neo Prime's 2026-06-06 launch-readiness rollup, current blocker status, GO rule, handoff coverage, and owner queue.
+- Updated `docs/PROJECT_NEO_DEPLOYMENT.md` with the 2026-06-06 NO-GO production launch checklist.
+- Updated `docs/deployment-notes.md` with the current deployment gate and GO-only-after-critical-blockers-pass rule.
+- Updated `VERSION.md` and `docs/versions/v0.8.0.md` with launch-readiness release-note addenda without changing the official version.
+- Updated `README.md`, `CHANGELOG.md`, and this status file with the current NO-GO launch state.
+- Verified current launch-impacting handoffs include the required handoff fields.
+- Added handoff: `docs/agent-handoffs/2026-06-06-scribe-neo-prime-launch-readiness-rollup.md`.
 
 Blocked or pending:
-- Stack Mason must deploy and verify the Supabase Edge Function before booking, contact, availability, admin, media, mix, and client portal flows can be launch-ready.
-- Bug Hunter should rerun full production regression after the backend function is deployed and production-safe test submissions are approved.
-- Shield should confirm whether admin/client routes need host-level Vercel protection in addition to Supabase/API authorization.
+- Scribe should update release notes again only after Neo Prime changes the launch decision from NO-GO to GO or the owner approves specific launch deferrals.
+- Gatekeeper/Owner, Mission Control, Ledger, Concierge, Shield, Bug Hunter, Launchpad, and Scout still own open launch follow-up documented in `docs/PROJECT_NEO_LAUNCH_READINESS.md`.
 
-Next agent: Stack Mason
+Next agent: Owner, then Gatekeeper
+
+## Bug Hunter
+
+Status: Official-launch production regression rerun completed; launch recommendation remains NO-GO.
+
+Latest update:
+- Ran Booker + Bug Hunter final production booking/contact QA against `https://tookoldweb.vercel.app`, currently deployed as `dpl_14DujRxbJBHLvyPrH9nHDVQfciUa`.
+- Verified live booking artifacts include overnight helper copy and `isOvernightWindow()` while the stale `End time should be after start time.` rejection is absent.
+- Verified production `POST /availability-check` accepts `2026-12-31 22:00` to `02:00` and returns public status `available`.
+- Verified public booking and contact writes still succeed after final deploy using QA run `qa-final-20260606-075118`.
+- Booking row created: `7cb9d870-b3e0-4334-98a3-a7b0ceab9e56`, status `new`, availability status `available`.
+- Contact row created: `696cec1f-b7f7-43d2-9c9e-fb765dcb580e`, status `new`.
+- Added handoff: `docs/agent-handoffs/2026-06-06-booker-bug-hunter-final-booking-contact-production-qa.md`.
+- Reran desktop and mobile official-launch regression against `https://tookoldweb.vercel.app`, currently aliased to Vercel production deployment `dpl_5QTuMWv2QYUKBqigZkpf6Zbq3m8c` from commit `81001f9165ba8ad2f60ecbbe221f7bb88b25deb4`.
+- Automated QA run ID: `qa-launch-20260602000555`; report generated `2026-06-02T00:05:59.491Z`.
+- Confirmed the previous overnight booking UI blocker is resolved: `2026-12-31 22:00` to `02:00` now returns `Available`, stores hidden availability fields, submits successfully, and writes `availability_status_at_submission = available`.
+- Verified homepage, services, events, FAQ, gallery, mixes, booking, contact, admin login, admin dashboard redirect, and client portal route behavior.
+- Verified header/footer links had no broken-link failures, official logo rendered, and mobile home/booking/gallery layouts had no horizontal overflow after lazy-load drilldown.
+- Verified gallery's automated image failures were lazy-loading false positives; `dj-too-kold-logo-thumb-520.jpg` loads directly and after scroll with natural size `458x520`.
+- Verified public API routes `/health`, `/availability-check`, `/availability`, `/media`, `/mixes`, and `/service-packages` return valid public-safe responses.
+- Verified public booking and contact forms write to production; QA booking/contact rows were created with email `qa-launch-20260602000555@example.com`.
+- Verified unauthenticated admin dashboard access redirects to admin login and unauthenticated admin/portal API routes return `401`.
+- Verified invalid admin login shows `Invalid login credentials` and does not leak the test credentials into the URL.
+- Added handoff: `docs/agent-handoffs/2026-06-01-bug-hunter-official-launch-regression-rerun.md`.
+
+Blocked or pending:
+- Resolved for Booker/Bug Hunter scope: current production deployment `dpl_14DujRxbJBHLvyPrH9nHDVQfciUa` keeps overnight booking behavior fixed and public booking/contact writes working.
+- Gatekeeper/Data Knox must provide approved production owner/admin and client sessions or record owner-approved deferrals for authenticated success-path QA.
+- Mission Control should verify the QA booking inquiry for run ID `qa-launch-20260602000555` appears in admin and can move through status workflow after approved admin access exists.
+- Concierge should verify the client portal success path only after approved client access exists; until then the portal should remain hidden/private beta.
+- Data Knox or Mission Control should clean up QA booking/contact rows for run IDs `qa-launch-20260601020033`, `qa-launch-20260602000555`, and `qa-final-20260606-075118` after evidence is collected.
+- Bug Hunter should rerun official-launch regression after a combined clean production deployment includes overnight booking, telemetry exclusion, portal-link deferral, and approved authenticated sessions.
+
+Next agent: Launchpad
 
 ## Brand / Content
 
@@ -46,41 +107,65 @@ Next agent: QA Test Engineer
 
 ## Data Knox
 
-Status: Availability Checker schema handoff completed.
+Status: Production Supabase schema applied and verified.
 
 Latest update:
-- Added a protocol-complete handoff note for the Availability Checker database schema.
-- Documented the `availability_blocks` table, event conflict windows, booking inquiry availability snapshots, indexes, and RLS/security posture.
-- Confirmed no frontend UI or API implementation was built by Data Knox.
+- Applied production schema migrations through the Supabase connector to project `wgbyyaeivtavecaszler`.
+- Verified core Project Neo tables, Availability Checker tables/columns, portal records, indexes, RLS, and public catalog seed counts.
+- Fixed the `availability_blocks` RLS helper mismatch by using `private.is_project_neo_admin()`.
+- Hardened browser-role table grants so `anon` and `authenticated` do not retain `TRUNCATE`, `REFERENCES`, or `TRIGGER` privileges on audited tables.
+- Added handoff: `docs/agent-handoffs/2026-05-31-data-knox-production-supabase-schema.md`.
 
 Blocked or pending:
-- Supabase CLI and `psql` are unavailable in this workspace, so the migration still needs database validation.
-- Stack Mason needs to update public availability and booking inquiry APIs to consume the schema.
-- Shield completed static security review; Stack Mason/Data Knox must fix the `availability_blocks` RLS helper mismatch before launch.
+- Stack Mason verified the full deployed API against the production schema for public routes and authorization boundaries.
+- Gatekeeper needs to create or confirm the first production owner/admin auth user and matching `public.users` row.
+- Future CLI migration work should compare Supabase connector migration history against local timestamped migration files before running `supabase db push`.
+- Booker, Mission Control, Ledger, Sync, and Shield need production smoke checks using approved test data only.
 
-Next agent: Stack Mason
+Next agent: Gatekeeper
 
 ## Booker
 
-Status: Booking flow handoff requirements documented and availability checker handoff expanded.
+Status: Final production overnight booking/contact smoke QA passed; full money path remains blocked by authenticated admin/client QA.
 
 Latest update:
+- Confirmed current final production deployment `dpl_14DujRxbJBHLvyPrH9nHDVQfciUa` still serves the overnight-aware booking UI.
+- Confirmed public booking inquiry write succeeds for QA run `qa-final-20260606-075118` and stores availability status `available`.
+- Confirmed public contact message write succeeds for QA run `qa-final-20260606-075118`.
+- Added `docs/agent-handoffs/2026-06-06-booker-bug-hunter-final-booking-contact-production-qa.md`.
+- Deployed production Vercel deployment `dpl_5QTuMWv2QYUKBqigZkpf6Zbq3m8c`, aliased to `https://tookoldweb.vercel.app`.
+- Verified the live booking page now shows overnight helper copy and loads the overnight-aware `script.js` validation path.
+- Verified production `POST /availability-check` accepts `2026-12-31 22:00` to `02:00` and returns public status `available`.
+- Added `docs/agent-handoffs/2026-06-01-booker-overnight-booking-ui-deploy.md`.
+- Added `docs/agent-handoffs/2026-05-31-booker-full-booking-journey-review.md`.
+- Reviewed the visitor -> availability check -> booking inquiry -> admin review -> quote/invoice -> deposit -> confirmed event journey.
+- Confirmed public inquiry copy is cautious and close to launch-ready, but the full booking money path is not launch-ready until admin status and invoice/deposit controls are implemented and verified.
+- Confirmed no database schema changes were made; Data Knox coordination remains required before any schema work.
+- Added `docs/agent-handoffs/2026-05-30-booker-booking-admin-flow-review.md`.
+- Reviewed public booking copy, availability checker behavior, admin booking display, admin availability blocks, and booking API behavior.
+- Flagged follow-up for admin booking status controls, availability snapshot trust boundaries, unchecked availability labels, and public-message copy alignment.
 - Refreshed `docs/agent-handoffs/2026-05-24-booker-availability-checker-flow.md` with required handoff fields.
 - Added Booker-specific booking flow handoff requirements to `AGENTS.md`.
 - Confirmed the note documents booking flow changes, form fields changed, validation rules, API/data requirements, availability behavior, admin follow-up, and testing performed.
 - No secrets, tokens, API keys, passwords, or private credentials were added.
 
 Blocked or pending:
-- Bug Hunter still needs to run the availability checker QA matrix.
+- Mission Control and Ledger still need authenticated admin QA for booking status and quote/invoice/deposit operations before the full money path is launch-ready.
+- Data Knox or Mission Control should clean up QA row set `qa-final-20260606-075118` after launch evidence is no longer needed.
+- Stack Mason should still review unchecked availability snapshot semantics and public/admin message alignment.
 - Supabase/Deno CLI verification remains blocked until those tools are available.
 
-Next agent: Bug Hunter
+Next agent: Mission Control
 
 ## Pixel Frost
 
-Status: Public frontend clean-route and form UI fixes completed locally and documented.
+Status: Public frontend overnight booking UI validation fix deployed; broader launch remains pending final QA.
 
 Latest update:
+- Fixed and deployed production booking UI validation for overnight event windows where end time is at or before start time.
+- Production deployment `dpl_5QTuMWv2QYUKBqigZkpf6Zbq3m8c` serves the updated booking helper copy and removed stale client-side end-time blockers.
+- Verified the production availability API accepts `2026-12-31 22:00` to `02:00` and returns a public `available` status.
+- Added handoff: `docs/agent-handoffs/2026-06-01-pixel-frost-overnight-booking-ui-validation.md`.
 - Updated static build output so public pages have clean route directories and built HTML uses root-relative links/assets.
 - Updated media fallback paths so gallery and mix images load from clean routes.
 - Updated booking/contact valid-submit behavior so users stay on the branded page and receive API success or an actionable direct-email fallback.
@@ -88,36 +173,55 @@ Latest update:
 - Added handoff: `docs/agent-handoffs/2026-05-26-pixel-frost-public-routing-form-ui.md`.
 
 Blocked or pending:
-- Launchpad / Deployment Engineer must promote the latest build before these exact frontend fixes are live.
-- QA Test Engineer should rerun public smoke tests after promotion.
+- Bug Hunter should rerun public booking browser regression for `2026-12-31 22:00` to `02:00`.
 - Booker should confirm direct-email fallback copy for booking/contact inquiries.
 
 Next agent: QA Test Engineer
 
 ## Mission Control
 
-Status: Availability management dashboard MVP implemented and documented.
+Status: Launch-critical admin workflow controls completed locally; production protected-route boundaries pass, but authenticated success-path QA is blocked by the unconfirmed/unsigned-in owner identity and missing invoice/payment QA records.
 
 Latest update:
+- Re-verified production on 2026-06-03: direct dashboard access redirects to admin login, and unauthenticated `/admin/me`, `/admin/invoices`, and `/admin/payments` return `401 unauthorized`.
+- Confirmed through aggregate production verification that one active owner/admin profile exists, but the linked Auth identity remains unconfirmed and has never signed in.
+- Confirmed the two approved QA booking inquiries and matching contact messages exist and remain `new`; production currently has zero clients, events, invoices, and payments.
+- Added handoff: `docs/agent-handoffs/2026-06-03-mission-control-authenticated-admin-workflow-verification.md`.
+- Added an Admin Review Queue to the Overview for new inquiry review, conflict review, open invoice collection, and pending/failed payment follow-up.
+- Added booking inquiry detail actions for protected status updates and private admin review notes.
+- Added event conflict indicators using API `conflict_warnings` plus visible dashboard overlap checks.
+- Added payment detail actions for protected payment status updates and surfaced invoice status/balance in payment review.
+- Updated public availability logic locally so pending/hold admin events return public `pending`; confirmed events still return public `unavailable`.
+- Updated booking checker validation so missing required checker fields keep Continue to Inquiry hidden.
+- Verified local rendered admin workflows with protected API-shaped data and production public/unauthenticated API smoke checks.
+- Added handoff: `docs/agent-handoffs/2026-06-01-mission-control-admin-workflows.md`.
 - Added the protected admin Availability section for availability block creation, upcoming event context, block lists, filters, detail views, and conflict indicators.
 - Surfaced booking inquiry `availability_status_at_submission`, `availability_checked_at`, and requested window fields in admin review.
 - Added protected admin API support and documentation for listing and creating `availability_blocks`.
 - Updated `docs/agent-handoffs/2026-05-24-mission-control-availability-management.md` to the expanded required handoff format.
 
 Blocked or pending:
-- Full authenticated create-block API testing is pending until Project Neo API config and an admin session are available.
-- `npm` and `deno` are not installed in the current shell, so project validation and Edge Function type-checking could not be run.
+- Full authenticated production admin write testing is blocked until the owner completes email confirmation and first sign-in and Gatekeeper approves the owner-controlled session.
+- Invoice/payment review and payment status success-path QA also require approved non-sensitive production QA records; production currently has zero invoices and payments.
+- Stack Mason needs to review/deploy the local `project-neo-api` availability-check update for pending/hold event conflicts.
+- Production smoke checks on 2026-06-01 still returned `Access-Control-Allow-Origin: *`; Stack Mason/Launchpad/Shield should confirm whether the local CORS hardening has been deployed or whether a wildcard is intentionally configured.
+- Mission Control/Ledger should decide whether full client, event, or invoice creation forms are required before launch; this pass kept those areas as protected review/API-backed record views.
+- Deno is not installed in the current shell, so Edge Function type-checking could not be run. `npm run validate` passed locally.
 - Sync still needs to own external calendar import/export behavior.
-- Shield completed static public/private availability review; RLS fix and scraping mitigations remain pending before launch.
+- Shield added local public/private availability hardening and scraping mitigations; Launchpad/Stack Mason need to deploy them before launch.
 - Bug Hunter still needs to run the availability management QA matrix.
 
-Next agent: Bug Hunter
+Next agent: Gatekeeper
 
 ## Gatekeeper
 
-Status: Auth route protection hardening completed locally.
+Status: First production owner identity and role profile bootstrapped; owner confirmation and authenticated-session QA pending.
 
 Latest update:
+- Created the first production Supabase Auth identity through the configured owner email's confirmation flow.
+- Created the matching active `public.users` owner profile and verified the admin authorization predicate passes.
+- Confirmed the production confirmation email was sent without retaining or exposing any password, token, or session.
+- Recorded Gatekeeper's auth/authorization handoff for the final Vercel protection decision.
 - Admin, auth, and client portal forms block native credential-submit fallback when config is missing.
 - Direct admin dashboard access redirects to admin login in missing-config state.
 - Static hosting noindex headers cover clean and `.html` admin, auth, and portal URLs.
@@ -125,16 +229,37 @@ Latest update:
 - Gatekeeper auth handoffs now notify Mission Control, Concierge, Shield, Launchpad, Data Knox, Bug Hunter, and Scribe, with explicit auth method, route, role, environment, redirect, risk, and testing sections.
 
 Blocked or pending:
-- Live Supabase admin and portal API authorization checks are blocked until Launchpad confirms the production Edge Function deployment.
-- Vercel Authentication or Deployment Protection must be configured in Vercel itself if host-level route protection is required beyond Supabase Auth.
+- The owner must complete email confirmation and first sign-in before the production admin session can be approved for QA.
+- Gatekeeper/Bug Hunter must verify authenticated `/admin/me`, dashboard access, sign-out, and password recovery after confirmation.
+- An approved client portal test identity/session is still needed separately.
+- Launchpad/Gatekeeper must verify the production confirmation redirect lands on the intended production domain.
+- Shield/Data Knox should review the pre-existing Supabase security-advisor findings, including leaked-password protection being disabled and the public `rls_auto_enable()` security-definer function.
+- Final Vercel protection decision is recorded: production will not use global Vercel Authentication/Deployment Protection for MVP launch; Supabase Auth, protected API routes, and RLS remain the private-data boundary. Gatekeeper should revisit host-level protection only if the hosting architecture changes or the owner requires a separate admin/client deployment.
 
-Next agent: Launchpad
+Next agent: Owner, then Gatekeeper and Bug Hunter
 
 ## Launchpad
 
-Status: Vercel production static deployment is live; the clean Speed Insights static-site integration is implemented locally and awaits promotion over the current Vercel bot `speed-insights.js` deployment drift; Supabase Edge Function deployment remains the launch blocker for live API workflows.
+Status: Clean Speed Insights production promotion completed; final Vercel protection decision recorded; Vercel production is live on the temporary Vercel domain with private-page telemetry drift removed, and Supabase Edge Function version 3 remains active.
 
 Latest update:
+- Recorded the final Vercel protection decision: production remains public for MVP launch, preview/staging should use Vercel Authentication or Deployment Protection where available, and Supabase Auth plus protected API routes and RLS remain the private-data boundary.
+- Promoted clean preview deployment `dpl_3jfap25hdwAVrHdH68Pd46UST6jJ` to production through Vercel CLI.
+- Confirmed new production deployment `dpl_7WvwHohRDsFwmgSBaHK6zXF486Er` targets commit `e3a786830cdf65c14ff1b198de3c2058d36ef838`.
+- Confirmed production aliases now point to the clean deployment: `tookoldweb.vercel.app`, `tookoldweb-trevonfinleys-projects.vercel.app`, and the branch alias.
+- Verified production homepage still includes Vercel static Speed Insights via `/_vercel/speed-insights/script.js`.
+- Verified production `admin-login` and `client-portal` clean URLs no longer include `speed-insights.js` or `/_vercel/speed-insights/script.js`.
+- Verified production `admin-login` and `client-portal` retain `x-robots-tag: noindex, nofollow`.
+- Added handoff: `docs/agent-handoffs/2026-06-01-launchpad-clean-speed-insights-promotion.md`.
+- Prepared the official production deployment gate and documented a NO-GO promotion decision until final launch blockers are cleared.
+- Confirmed Vercel build settings are framework `Other`, `npm run build`, output directory `dist`, clean URLs enabled, and trailing slashes disabled.
+- Confirmed current final domain target is `https://tookoldweb.vercel.app`; HTTPS/HSTS are active on production responses, but no custom launch domain is configured in Vercel yet.
+- Confirmed previous production deploy ID `dpl_2mKhqPH4g8CMvzwCZBfocXSGeTUU` and clean preview candidate `dpl_3jfap25hdwAVrHdH68Pd46UST6jJ`.
+- Confirmed production Supabase API URL is `https://wgbyyaeivtavecaszler.functions.supabase.co/project-neo-api`, with `project-neo-api` active as full-route version 3.
+- Confirmed production Vercel config contains only browser-safe public values; service-role, payment, calendar, OAuth, Apple, and webhook secrets must remain server-side only.
+- Confirmed noindex headers are active on production admin/client clean URLs and clean URLs resolve for key protected shells.
+- Confirmed previous production had Vercel bot `speed-insights.js` drift on private admin/client pages, while the clean preview candidate excluded Speed Insights from private pages.
+- Added handoff: `docs/agent-handoffs/2026-05-31-launchpad-official-production-readiness.md`.
 - Added build-time Vercel Speed Insights injection for public pages only, using the static/vanilla Vercel script route instead of a Next.js component.
 - Confirmed the Vercel project serves the Speed Insights script route at `/_vercel/speed-insights/script.js`.
 - Confirmed current production also contains a Vercel bot `speed-insights.js` integration on at least the homepage and client portal; Launchpad should replace it with the local build-injection approach before treating private-page exclusion as live.
@@ -144,52 +269,74 @@ Latest update:
 - Confirmed clean URLs respond for key public, admin-login, and client-portal routes.
 - Confirmed public browser config is generated for the production build while server-only values remain excluded from frontend code.
 - Added handoff: `docs/agent-handoffs/2026-05-26-launchpad-vercel-production-deployment.md`.
+- Stack Mason confirmed the production `project-neo-api` Edge Function is active in full-route version 3 and CORS allows the production Vercel origin.
 
 Blocked or pending:
-- Push/deploy the local Speed Insights build-injection changes, or reconcile the remote Vercel bot branch first, before treating Project Neo's Speed Insights implementation as privacy-reviewed.
-- The `project-neo-api` Supabase Edge Function still needs to be deployed and verified before booking, contact, availability, admin, and client portal API flows can be treated as production-ready.
+- Official launch remains NO-GO until the remaining launch blockers are cleared and Bug Hunter reruns final regression against production deployment `dpl_7WvwHohRDsFwmgSBaHK6zXF486Er`.
+- Shield should re-review private-page telemetry now that the clean production promotion is live.
+- Approved production admin and client sessions are still required for authenticated admin/client success-path QA.
 - Later uncommitted agent updates in this workspace still need review, commit, and promotion before they can be considered live.
+- Decide whether `tookoldweb.vercel.app` is the official launch domain or whether a custom domain/DNS setup is required before public launch.
 - Supabase function secrets must be set in Supabase only; service-role, payment, calendar, OAuth, Apple, and webhook secrets must stay server-side.
-- Shield should decide whether preview/admin/client routes require Vercel-level protection in addition to Supabase Auth.
-- Bug Hunter should run a production smoke test after the backend function is deployed.
+- Final Vercel protection decision is recorded; Launchpad should verify that production stays public, previews remain protected where available, and admin/client shells expose no private data in final regression.
+- Preview deployments are protected by Vercel Authentication; final public launch verification should use the promoted production build or an approved preview bypass.
 
-Next agent: Shield
+Next agent: Gatekeeper
 
 ## Stack Mason
 
-Status: Production backend API verification blocked.
+Status: Full production backend function deployed and public routes verified.
 
 Latest update:
-- Production Vercel configuration points to the intended Supabase Edge Function API base URL.
-- The configured Supabase project currently reports no deployed Edge Functions.
-- Expected public backend routes for booking inquiries, contact messages, availability checks, and health checks return function-not-found responses.
-- No booking/contact database write success was observed or claimed.
+- Replaced reduced-mode `project-neo-api` with active full-route version 3 using the pinned full source from commit `e3a786830cdf65c14ff1b198de3c2058d36ef838`.
+- Confirmed `/health` no longer reports reduced mode.
+- Confirmed CORS preflight allows the production Vercel origin.
+- Verified public availability states `available`, `pending`, `unavailable`, and `contact_required` against production schema using temporary test blocks.
+- Verified public booking/contact writes created rows, then cleaned up the temporary verification rows.
+- Verified public service packages return seeded data and media/mixes/availability feeds return valid empty arrays.
+- Verified admin, invoice/payment, and portal routes return `401 unauthorized` without approved sessions instead of reduced-mode `503` responses.
+- Added handoff: `docs/agent-handoffs/2026-05-31-stack-mason-full-production-api-deploy.md`.
 
 Blocked or pending:
-- Deploy `project-neo-api` to the configured Supabase project.
-- Confirm function-level CORS allows the production Vercel domain after deployment.
-- Confirm booking/contact submissions write to the correct production Supabase tables after deployment.
-- Test availability checker responses for `available`, `pending`, `unavailable`, and `contact_required` after deployment.
+- Gatekeeper needs to provide approved production admin and client portal sessions for authenticated success-path testing.
+- Mission Control should retest authenticated admin event, booking, dashboard, and availability block workflows.
+- Ledger should retest authenticated invoice/payment routes.
+- Concierge should retest authenticated portal routes.
+- Launchpad should deploy Shield's public availability hardening before treating `reason_code` removal and abuse controls as production-active.
+- Bug Hunter should rerun full production regression.
 
-Next agent: Stack Mason
+Next agent: Gatekeeper
 
 ## Concierge
 
-Status: Client portal foundation implemented locally and documented.
+Status: Client portal foundation implemented locally; official launch inclusion is deferred and the portal remains hidden/private beta.
 
 Latest update:
+- Verified on 2026-06-03 that local public source pages and the generated `dist` build contain no public links to `client-portal.html`, and the local portal login includes the invitation-only private-beta notice.
+- Verified production deployment `dpl_14DujRxbJBHLvyPrH9nHDVQfciUa` removes Portal links from all nine public pages.
+- Verified the live portal remains `noindex,nofollow` and now displays the invitation-only private-beta notice.
+- Added handoff: `docs/agent-handoffs/2026-06-03-pixel-frost-public-portal-visibility-deploy.md`.
+- Added handoff: `docs/agent-handoffs/2026-06-03-concierge-public-portal-visibility-verification.md`.
+- Decided the client portal is not included in the official public launch because an approved production client session is still required to verify login, event summary, invoice/balance, hosted payment links, contract status, editable notes, and song requests end to end.
+- Removed public Portal navigation/footer entry points from the public website pages so launch navigation and copy do not overpromise portal readiness.
+- Marked direct client portal login copy as private beta access by invitation while Project Neo finishes portal verification.
+- Added handoff: `docs/agent-handoffs/2026-06-01-concierge-client-portal-launch-deferral.md`.
 - Added authenticated client portal structure for event overview, event timeline, invoice/balance status, hosted payment links, song requests, contract status, venue details, contact actions, and notes/preferences.
 - Added `/portal/*` API routes scoped through `clients.portal_user_id`.
 - Added `event_notes.client_editable` for client-editable preference notes.
 - Added handoff: `docs/agent-handoffs/2026-05-26-concierge-client-portal-foundation.md`.
 
 Blocked or pending:
-- Shield needs to review portal auth boundaries, hosted payment-link exposure, CORS assumptions, and host-level route protection expectations.
+- Bug Hunter should include the resolved public portal visibility behavior in the next production regression.
+- Gatekeeper must provide an approved production client test session before Concierge can verify the authenticated portal success path.
+- Concierge/Bug Hunter must verify login, event summary, invoices, hosted payment links, contracts, notes, and song requests with approved client test data before the portal is promoted into public navigation.
+- Launchpad/Shield must confirm the promoted production build excludes private-page telemetry drift before client portal launch.
+- Shield completed static portal/auth/CORS/payment-link boundary review; approved production client sessions are still needed for success-path testing.
 - Bug Hunter needs to smoke test the portal against configured Supabase data and real client test accounts.
 - Mission Control needs to confirm an admin workflow for linking `clients.portal_user_id` and marking event notes client-editable.
 - Edge Function type-checking and Supabase migration validation remain pending until Deno/Supabase CLI or database tooling is available.
 
-Next agent: Shield
+Next agent: Launchpad
 
 ## Brand / Content Engineer
 
@@ -209,89 +356,124 @@ Next agent: Launchpad
 
 ## Scout
 
-Status: SEO, performance, accessibility, and local discovery optimization documented.
+Status: Public launch SEO, accessibility, and crawl controls prepared locally.
 
 Latest update:
-- Added Birmingham/Alabama search intent to public titles, meta descriptions, page copy, and booking-focused internal links.
-- Added homepage LocalBusiness/EntertainmentBusiness structured data and FAQPage structured data.
-- Added crawl hygiene for private/admin/auth/client portal routes and nofollow signals for public portal links.
-- Improved image loading, alt text, skip-link accessibility, focus states, and deferred script loading.
-- Added handoff: `docs/agent-handoffs/2026-05-26-scout-seo-performance-local-discovery.md`.
+- Added clean canonical URLs for public pages using `https://tookoldweb.vercel.app`.
+- Added root `sitemap.xml` and updated the static build to copy XML artifacts into `dist`.
+- Expanded `robots.txt` to disallow admin/auth/client portal clean routes and `.html` routes, plus declare the sitemap.
+- Updated homepage and FAQ structured data with absolute launch-domain references.
+- Confirmed Birmingham/Alabama search intent remains present in public titles, meta descriptions, page copy, and booking-focused internal links.
+- Confirmed image loading, alt text, skip-link accessibility, focus states, and mobile no-overflow behavior locally.
+- Added handoff: `docs/agent-handoffs/2026-06-01-scout-public-launch-seo-accessibility.md`.
 
 Blocked or pending:
-- Launchpad must confirm the final production domain before canonical URLs and a production sitemap can be added.
+- Launchpad must deploy and verify `sitemap.xml`, canonical URLs, and robots rules on production.
+- If a custom domain replaces `https://tookoldweb.vercel.app`, Scout/Launchpad must update canonical, sitemap, JSON-LD, app URL, and CORS references together.
 - Bug Hunter should smoke test deployed public pages after the next deployment.
 - Shield should review crawl boundaries for admin, auth, and client portal routes after deployment.
 - Scout should revisit structured data after official phone, social links, service radius, and final domain are confirmed.
 
-Next agent: Bug Hunter
+Next agent: Launchpad
 
 ## Neo Prime
 
-Status: Architecture handoff requirements documented.
+Status: Official launch remains NO-GO. Neo Prime can declare GO only after all critical blockers pass or receive explicit owner-approved deferrals.
 
 Latest update:
-- Added architecture handoff requirements to `agents.md`.
-- Confirmed Neo Prime must notify affected agents when work touches architecture, routing, folder structure, app strategy, or major technical decisions.
-- Added a Neo Prime handoff note for the architecture handoff rule update.
+- Updated the launch-readiness tracker on 2026-06-06 after Booker + Bug Hunter verified current production booking/contact writes and overnight public booking behavior on deployment `dpl_14DujRxbJBHLvyPrH9nHDVQfciUa`.
+- Confirmed production schema, full API, public booking/contact writes, overnight booking behavior, portal public-link deferral, and Vercel protection decision have all advanced.
+- Confirmed GO is still blocked because owner confirmation/first sign-in, approved admin-session QA, invoice/payment success-path QA, final domain decision, final Shield/Bug Hunter security/telemetry recheck, and final production regression remain open.
 
 Blocked or pending:
-- None.
+- Owner/Gatekeeper must complete owner email confirmation and first sign-in, then approve an owner-controlled admin session for QA.
+- Mission Control/Ledger/Stack Mason/Bug Hunter must verify authenticated admin booking, status, invoice, and payment success paths after approved access and non-sensitive records exist.
+- Concierge client portal remains hidden/private beta unless the owner explicitly includes it and approved client QA passes.
+- Shield/Bug Hunter/Launchpad must verify private-page telemetry, CORS, public availability hardening, noindex/private-route behavior, and secret boundaries on the current production deployment.
+- Scout/Launchpad/Owner must record final domain decision.
+- Bug Hunter must rerun final official-launch regression after blockers are resolved or owner-approved as deferrals.
 
-Next agent: Scribe
+Next agent: Owner, then Gatekeeper
 
 ## Sync
 
-Status: Availability Checker calendar logic supports overnight booking windows locally.
+Status: Availability Checker calendar logic supports overnight booking windows locally and public production availability checks are verified.
 
 Latest update:
 - Updated public availability, booking submission, admin event conflict checks, and client/admin/public schedule display logic so an event can start on one calendar date and end after midnight on the next date.
 - Treats `end_time <= start_time` as a next-day ending while preserving the selected `event_date` as the start date.
 - Added public-facing `next day` labels for overnight ranges without exposing private event, client, venue, or internal note data.
 - Documented the overnight event window rule in the Project Neo backend notes.
+- Stack Mason verified deployed public overnight availability behavior and all four public availability statuses against production schema.
 
 Blocked or pending:
 - Google Calendar sync remains deferred.
 - `availability_blocks` does not yet have provider sync metadata.
-- Shield completed static public availability serialization and RLS review; RLS fix and scraping mitigations remain pending before launch.
+- Shield completed static public availability serialization/RLS review and added local scraping mitigations; deployment and final production regression remain.
 - Deno/Edge Function type checking could not be run locally because `deno` is not installed in this workspace.
-- Bug Hunter should verify overnight public availability, admin conflict warnings, and stored `start_at`/`end_at` behavior against a deployed Edge Function.
+- Bug Hunter should verify overnight public availability, admin conflict warnings, and stored `start_at`/`end_at` behavior in final production regression with approved data.
+- Stack Mason deployed reduced production availability parsing for overnight requests; real conflict verification now needs approved test data and deployed API smoke checks.
 
-Next agent: Bug Hunter
+Next agent: Stack Mason
 
 ## Shield
 
-Status: Availability Checker security review completed with launch-blocking RLS follow-up.
+Status: Launch security review completed locally; deployment and authenticated QA remain before GO.
 
 Latest update:
 - Reviewed public availability checker serialization for private event/client/venue/internal note exposure.
 - Confirmed `POST /availability-check` returns safe public statuses/messages and does not return client names, venue names, event titles, or internal notes.
 - Identified a critical `availability_blocks` RLS helper mismatch: the availability policy references `private.is_project_neo_staff()`, while the core migration defines `private.is_project_neo_admin()` and drops old staff helpers.
-- Identified medium-risk public schedule scraping, public `reason_code` leakage, and client-submitted availability snapshot integrity issues.
+- Data Knox fixed the RLS helper mismatch in production and hardened browser-role table grants.
+- Removed public `reason_code` output locally, added lightweight availability rate limiting, added a 370-day availability check horizon, restricted `GET /availability` to intentionally public events, recomputed booking availability snapshots server-side, and made CORS default to the production Vercel origin.
+- Confirmed no official SOC 2 Type II or PCI-DSS compliance claim was added; Project Neo remains readiness/alignment only.
+- Reviewed admin/client route boundaries, CORS, secret handling, payment card-data rejection, noindex behavior, and Speed Insights/privacy drift.
+- Added handoff: `docs/agent-handoffs/2026-05-31-shield-launch-security-review.md`.
 - Added handoff: `docs/agent-handoffs/2026-05-26-shield-availability-checker-security-review.md`.
 
 Blocked or pending:
-- Stack Mason/Data Knox need to fix and verify the `availability_blocks` RLS policy before launch.
-- Stack Mason/Launchpad need to add abuse protection for public availability endpoints before launch.
-- Stack Mason should remove or collapse public `reason_code` values and recompute booking availability snapshots server-side.
-- Bug Hunter should add direct anonymous-access and public-response privacy tests.
+- Launchpad/Stack Mason need to deploy the local Shield Edge Function hardening before it is production-active.
+- Gatekeeper needs to provide approved production admin and client portal sessions for authenticated success-path testing.
+- Bug Hunter should rerun production regression after deployment, including public availability payload shape, rate limiting, noindex/private-route behavior, and unauthorized route boundaries.
+- Final Vercel protection decision is recorded; Shield should verify in final regression that public production shells do not expose private data and that previews remain protected where available.
+- Launchpad resolved the private-page Speed Insights production drift by promotion; Shield should recheck production telemetry behavior before launch.
 
-Next agent: Stack Mason
+Next agent: Launchpad
 
 ## Ledger
 
-Status: Invoice/payment ledger system implemented locally and documented.
+Status: Invoice/payment tracking structure is ready, but authenticated admin invoice/payment workflows are not launch-verified because the bootstrapped owner Auth identity remains unconfirmed/unsigned-in and production has zero invoice/payment records; live Square/Stripe collection is deferred.
 
 Latest update:
-- Added invoice hosted payment-link/reference fields for Square, Stripe, or another external checkout provider.
-- Added invoice ledger snapshots for amount paid, deposit paid, and balance due.
-- Added payment date/reference handling and payment validation in the Project Neo API.
-- Added admin invoice ledger visibility and dashboard open balance support.
-- Created and expanded `docs/agent-handoffs/2026-05-26-ledger-invoice-payment-ledger.md` with required payment-change notification notes for Data Knox, Stack Mason, Mission Control, Shield, Launchpad, Bug Hunter, and Scribe.
+- Re-attempted the approved owner-session verification requested by Mission Control and Ledger; the accessible browser had no authenticated admin session.
+- Confirmed current production state: one Auth identity, zero confirmed identities, zero signed-in identities, one active owner/admin profile, two approved QA booking inquiries, two approved QA contact messages, and zero invoices/payments.
+- Verified direct admin dashboard access redirects to login and unauthenticated `/admin/me`, `/admin/booking-inquiries`, `/admin/invoices`, and `/admin/payments` return `401 unauthorized`.
+- Confirmed no booking status was moved and no invoice/payment record was created because those actions must be tested through the approved protected session.
+- Added handoff: `docs/agent-handoffs/2026-06-03-ledger-approved-admin-session-verification.md`.
+- Mission Control re-verified production on 2026-06-03: one active owner/admin profile now exists, but the linked Auth identity is unconfirmed and has never signed in; production still has zero invoices and payments.
+- Reconfirmed unauthenticated `/admin/me`, `/admin/invoices`, and `/admin/payments` return `401 unauthorized`.
+- Attempted authenticated admin, invoice, and payment workflow verification against production.
+- Verified deployed browser config points to the production Project Neo API and Supabase project with browser-safe public values.
+- Verified production `GET /admin/me`, `GET /admin/invoices`, and `GET /admin/payments` return `401 unauthorized` without a bearer token.
+- Verified production `GET /admin/me` returns `401 unauthorized` with an invalid bearer token.
+- Verified production invoice/payment ledger triggers and constraints are present.
+- Confirmed the admin dashboard supports invoice/payment review and payment status update actions, while invoice creation and payment creation are currently API-backed rather than exposed as admin UI forms.
+- Verified invoice fields store hosted payment-link/reference metadata, totals, deposit amount, amount paid, deposit paid, and balance due.
+- Verified payment fields store invoice link, provider, provider reference, amount, status, type, payment date, paid/refunded timestamps, and notes.
+- Verified Project Neo does not define card number, CVV/CVC, card expiration, PAN, or raw payment credential storage in the invoice/payment schema.
+- Verified API card-field rejection with a production-safe request containing `cvv`; production returned `400 sensitive_payment_data_rejected`.
+- Verified production `GET /admin/invoices` and `GET /admin/payments` return `401 unauthorized` without an admin token.
+- Verified production `GET /health` returns `200` with `project-neo-api` status `ok`.
+- Ran local syntax/deployment checks: `node --check admin.js`, `node --check client-portal.js`, `node --check script.js`, `npm run validate`, and `git diff --check`.
+- Added handoff: `docs/agent-handoffs/2026-06-01-ledger-authenticated-admin-invoice-payment-workflow-verification.md`.
+- Added handoff: `docs/agent-handoffs/2026-06-01-ledger-launch-invoice-payment-verification.md`.
 
 Blocked or pending:
-- Supabase migration execution is pending because local Supabase CLI/database tooling was unavailable during implementation.
-- Deno/Edge Function type checking is pending because Deno/TypeScript tooling was unavailable in the workspace.
-- Square/Stripe payment-link creation and webhook reconciliation are still future integration work.
+- Owner/Gatekeeper must complete confirmation and first sign-in for the existing production owner identity before authenticated admin workflow QA can pass.
+- An approved owner-controlled session and approved non-sensitive invoice/payment test records are still required for authenticated invoice fetch/create, payment fetch/create, and status-update success-path QA.
+- Mission Control/Ledger should decide whether admin invoice creation/payment creation UI is required before launch; create routes exist but current admin UI focuses on review and payment status updates.
+- Square/Stripe live collection, payment-link creation, and webhook reconciliation are not implemented or verified; this remains deferred unless explicitly approved.
+- Production health verification still showed wildcard CORS behavior; Launchpad/Shield/Stack Mason should confirm whether that is accepted or stale deployment drift.
+- Deno and Supabase CLI are not installed locally, so local Edge Function type-checking and CLI migration verification were not run in this pass.
 
-Next agent: Bug Hunter
+Next agent: Gatekeeper

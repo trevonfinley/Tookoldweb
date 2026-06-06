@@ -1945,6 +1945,22 @@ ul {
   font-size: 1.05rem;
 }
 
+.admin-action-panel {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(8, 16, 24, 0.08);
+}
+
+.admin-action-panel h4 {
+  margin: 0;
+  font-size: 0.96rem;
+}
+
+.admin-action-panel p {
+  margin: 0;
+}
+
 .admin-detail p {
   margin: 0;
   color: var(--muted);

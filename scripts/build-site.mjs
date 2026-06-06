@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = path.join(rootDir, "dist");
-const rootFileExtensions = new Set([".html", ".css", ".js", ".txt", ".ico", ".webmanifest"]);
+const rootFileExtensions = new Set([".html", ".css", ".js", ".txt", ".xml", ".ico", ".webmanifest"]);
 const excludedRootFiles = new Set(["speed-insights.js"]);
 const assetDirectories = ["assets"];
 const speedInsightsPublicPages = new Set([
