@@ -14,6 +14,7 @@ const publicPages = [
   "events.html",
   "contact.html",
   "faq.html",
+  "404.html",
 ];
 
 const requiredFiles = [

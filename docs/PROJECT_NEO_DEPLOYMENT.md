@@ -13,10 +13,11 @@ Do not run the Project Neo service role key through the static host. Keep it onl
 | Environment | Branch/source | Static host | Supabase project | Purpose |
 | --- | --- | --- | --- | --- |
 | Local | Developer machine | `npm run dev` or `npm run preview` | Local Supabase or dev project | Build, test, and QA changes before GitHub |
-| Staging | `staging` branch and PR previews | Vercel Preview or Netlify branch/deploy preview | Separate staging Supabase project | Test deploys with realistic data and no production risk |
-| Production | `main` branch | Production domain | Production Supabase project | Live DJ Too Kold website and admin platform |
+| Development | `dev` branch and `feature/*` branches | Vercel Preview or Netlify branch/deploy preview | Recommended `project-neo-dev` | Agent integration and active development testing |
+| Staging | `staging` branch | Vercel Preview or Netlify branch/deploy preview | Recommended `project-neo-staging` | Release candidate QA with realistic test data and no production risk |
+| Production | `main` branch | Production domain | Recommended `project-neo-prod` | Live DJ Too Kold website and admin platform |
 
-Staging and production should use different Supabase projects. This keeps test bookings, payment tests, and admin experiments away from live client data.
+The official release flow is `feature/* -> dev -> staging -> main`. Development, staging, and production should use different Supabase projects. This keeps test bookings, payment tests, and admin experiments away from live client data.
 
 ## Environment Variables
 
@@ -171,16 +172,21 @@ Do not use `file://` URLs for Auth QA. OAuth redirects and passkeys should be te
 
 ## Git Branch Recommendation
 
-Use a simple stable-release flow:
+Use a stable four-step release flow:
+
+```txt
+feature/* -> dev -> staging -> main
+```
 
 | Branch | Role | Deploy target |
 | --- | --- | --- |
-| `main` | Production-ready code only | Production |
-| `staging` | Integrated release candidate | Staging |
-| `feature/name-of-change` | Individual work | Preview deployment |
+| `feature/name-of-change` | Individual agent work created from `dev` | Temporary Preview deployment |
+| `dev` | Active integration branch for agent work | Development/integration Preview deployment |
+| `staging` | Pre-production release candidate | Staging Preview deployment |
+| `main` | Production-ready code only | Production deployment |
 | `hotfix/name-of-fix` | Urgent production fix | Preview, then `main` |
 
-Open pull requests into `staging` for normal work. Promote by opening a pull request from `staging` into `main` after QA. Hotfixes can go straight to `main` after a preview deployment and focused review.
+Open pull requests from feature branches into `dev` for normal work. Promote by opening a pull request from `dev` into `staging` after integration checks pass. Promote by opening a pull request from `staging` into `main` after Bug Hunter QA, Shield review, Launchpad deployment review, Scribe release notes, and Neo Prime release approval. Hotfixes can go from `hotfix/*` to `main` after a focused preview and review, then `main` must be back-merged into `staging` and `dev`.
 
 ## Supabase Deployment
 
@@ -332,7 +338,7 @@ Production Branch: main
 | Preview | Staging Supabase URL, staging publishable key, staging API URL, `PROJECT_NEO_ENV=staging`. |
 | Production | Production Supabase URL, production publishable key, production API URL, `PROJECT_NEO_ENV=production`. |
 
-For the initial `tookoldweb.vercel.app` launch, the production public browser values are also mirrored in `vercel.json` so the static build can complete even before dashboard-level Vercel environment variables are entered. Do not add server-only secrets to `vercel.json`.
+Do not mirror production public browser values in `vercel.json`. Keep environment-specific public config in Vercel's Environment Variables UI or approved CI/CD secret storage so feature, dev, staging, and production deployments cannot accidentally share the production API or Supabase target.
 
 5. Keep `SUPABASE_SERVICE_ROLE_KEY`, payment secrets, and calendar secrets out of Vercel unless Project Neo later adds private Vercel server code.
 6. Keep preview deployments behind Vercel Authentication or Deployment Protection where available. For production MVP, do not enable global Vercel Authentication or production Deployment Protection because public marketing, booking, contact, and availability routes must stay reachable.
@@ -390,8 +396,8 @@ Production branch: main
 
 Preview deployments should prove a change without touching live customer data.
 
-- Pull requests and feature branches use staging Supabase values.
-- The `staging` branch uses the staging Supabase project and a stable staging URL.
+- Feature branches and the `dev` branch should use `project-neo-dev` values.
+- The `staging` branch should use `project-neo-staging` values and a stable staging URL.
 - Production variables should only be attached to the `main` production deployment.
 - Preview deployments should keep admin and client portal pages noindexed and protected when the hosting plan supports it.
 - Test payment and calendar integrations only against sandbox/test provider accounts.

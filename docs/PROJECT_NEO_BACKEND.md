@@ -89,6 +89,8 @@ or:
 { "ok": false, "error": { "code": "validation_error", "message": "Email must be valid." } }
 ```
 
+Validation-style 4xx errors may include safe `details` such as `field` or `allowed` values so Booker and Mission Control can show useful UI feedback. Server-side 5xx errors return a safe public `code` and `message` with `details: null`; raw database messages, environment/config errors, internal conflict data, secrets, and private records must not be returned to public callers.
+
 ### `POST /booking-inquiries`
 
 Creates a booking inquiry from the public booking form.
@@ -108,6 +110,18 @@ Creates a booking inquiry from the public booking form.
   "cityState": "Chicago, IL",
   "guestCount": 150,
   "indoorOutdoor": "indoor",
+  "dayOfContactName": "Coordinator Name",
+  "dayOfContactPhone": "555-555-0101",
+  "eventVibe": "Wedding Reception Party",
+  "crowdType": "Mixed ages, family and friends",
+  "cleanExplicitPreference": "clean_preferred",
+  "micNeeds": "One wireless mic for speeches",
+  "mustPlaySongs": "Client-provided first dance and family requests",
+  "doNotPlaySongs": "No line dances",
+  "announcementsNeeded": "Wedding party introductions and last call",
+  "specialMoments": "First dance, bouquet toss, send-off",
+  "loadInNotes": "Use side entrance near ballroom",
+  "parkingNotes": "Vendor parking behind venue",
   "musicPreferences": "Hip-hop, R&B, clean edits, must-play songs...",
   "budgetRange": "$1,200-$1,800",
   "heardAbout": "Referral",
@@ -117,7 +131,9 @@ Creates a booking inquiry from the public booking form.
 }
 ```
 
-Required fields are client name, email, event type, event date, city/state, and estimated guest count. The API accepts camelCase, snake_case, and HTML form-style hyphenated field names for the booking payload, stores a derived `full_name`, splits first/last name when possible for admin review, and builds the required internal `message` summary when the public form does not send one.
+Required fields are client name, email, event type, event date, city/state, and estimated guest count. Optional Event Prep intake fields include day-of contact name/phone, event vibe, crowd type, clean/explicit preference, mic needs, must-play songs, do-not-play songs, announcements, special moments, load-in notes, and parking notes. The API accepts camelCase, snake_case, and HTML form-style hyphenated field names for the booking payload, stores a derived `full_name`, splits first/last name when possible for admin review, and builds the required internal `message` summary when the public form does not send one.
+
+Event Prep intake is stored as source material on the booking inquiry using existing `additional_notes`/`message` text. No new public booking columns are required for this pass. Future protected admin flows can map these details into `event_prep_checklists`, `event_music_notes`, `event_timeline_items`, or related admin-only prep records after Stack Mason and Data Knox align the API/schema contract.
 
 When event date, start time, and end time are present, booking inquiry creation stores the public availability snapshot in `requested_start_at`, `requested_end_at`, `availability_status_at_submission`, and `availability_checked_at`. The Edge Function recomputes the snapshot server-side during submission so client-provided availability fields are historical UI context only, not trusted booking state. This is a historical lead-submission snapshot, not a final booking guarantee.
 

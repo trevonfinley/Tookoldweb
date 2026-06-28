@@ -50,7 +50,7 @@
   }
 
   function getLoginUrl(returnTo = "admin-dashboard.html") {
-    return `admin-login.html?returnTo=${encodeURIComponent(returnTo)}`;
+    return `/admin-login.html?returnTo=${encodeURIComponent(returnTo)}`;
   }
 
   function getCallbackUrl(returnTo = "admin-dashboard.html") {

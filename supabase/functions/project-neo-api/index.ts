@@ -47,6 +47,14 @@ const BOOKING_EVENT_TYPES = new Set([
 
 const BOOKING_SETUP_TYPES = new Set(["indoor", "outdoor", "both", "not_sure"]);
 
+const BOOKING_CLEAN_EXPLICIT_PREFERENCES = new Set([
+  "clean_only",
+  "clean_preferred",
+  "explicit_allowed",
+  "client_discretion",
+  "not_specified",
+]);
+
 const BOOKING_BUDGET_RANGES = new Set([
   "Under $750",
   "$750-$1,200",
@@ -175,12 +183,14 @@ function ok(request: Request, data: JsonValue, status = 200) {
 
 function fail(request: Request, error: unknown) {
   if (error instanceof ApiError) {
+    const safeDetails = error.status < 500 ? error.details ?? null : null;
+
     return jsonResponse(request, error.status, {
       ok: false,
       error: {
         code: error.code,
         message: error.message,
-        details: error.details ?? null,
+        details: safeDetails,
       },
     });
   }
@@ -474,8 +484,35 @@ function adminLine(label: string, value: unknown) {
   return `${label}: ${value}`;
 }
 
-function composeBookingMessage(details: Record<string, unknown>) {
+function cleanExplicitPreferenceLabel(value: unknown) {
+  return ({
+    clean_only: "Clean music only",
+    clean_preferred: "Clean preferred",
+    explicit_allowed: "Explicit allowed",
+    client_discretion: "Let's discuss",
+    not_specified: "Not sure yet",
+  } as Record<string, string>)[String(value ?? "")] ?? value;
+}
+
+function composeEventPrepDetails(details: Record<string, unknown>) {
   return [
+    adminLine("Day-of contact name", details.day_of_contact_name),
+    adminLine("Day-of contact phone", details.day_of_contact_phone),
+    adminLine("Event vibe", details.event_vibe),
+    adminLine("Crowd type", details.crowd_type),
+    adminLine("Clean/explicit preference", cleanExplicitPreferenceLabel(details.clean_explicit_preference)),
+    adminLine("Mic needs", details.mic_needs),
+    adminLine("Must-play songs", details.must_play_songs),
+    adminLine("Do-not-play songs", details.do_not_play_songs),
+    adminLine("Announcements needed", details.announcements_needed),
+    adminLine("Special moments", details.special_moments),
+    adminLine("Load-in notes", details.load_in_notes),
+    adminLine("Parking notes", details.parking_notes),
+  ].join("\n");
+}
+
+function composeBookingMessage(details: Record<string, unknown>) {
+  const lines = [
     adminLine("Event type", details.event_type),
     adminLine("Event date", details.event_date),
     adminLine("Start time", details.start_time),
@@ -489,7 +526,13 @@ function composeBookingMessage(details: Record<string, unknown>) {
     adminLine("Budget range", details.budget_range),
     adminLine("Referral source", details.heard_about),
     adminLine("Additional notes", details.additional_notes),
-  ].join("\n");
+  ];
+
+  if (details.event_prep_details) {
+    lines.push("", "Event Prep Details", String(details.event_prep_details));
+  }
+
+  return lines.join("\n");
 }
 
 function bookingStatusCanMove(fromStatus: string, toStatus: string) {
@@ -893,7 +936,58 @@ function bookingInquiryPayload(body: Payload) {
   const musicPreferences = optionalString(body, ["musicPreferences", "music_preferences", "music-preferences"], 1200);
   const budgetRange = optionalEnum(body, ["budgetRange", "budget_range", "budget-range"], BOOKING_BUDGET_RANGES, "Budget range");
   const heardAbout = optionalString(body, ["heardAbout", "heard_about", "heard-about"], 180);
-  const additionalNotes = optionalString(body, ["additionalNotes", "additional_notes", "additional-notes", "message"], 2000);
+  const dayOfContactName = optionalString(body, ["dayOfContactName", "day_of_contact_name", "day-of-contact-name"], 120);
+  const dayOfContactPhone = optionalString(body, ["dayOfContactPhone", "day_of_contact_phone", "day-of-contact-phone"], 40);
+  const eventVibe = optionalString(body, ["eventVibe", "event_vibe", "event-vibe"], 120);
+  const crowdType = optionalString(body, ["crowdType", "crowd_type", "crowd-type"], 160);
+  const cleanExplicitPreference = optionalEnum(
+    body,
+    ["cleanExplicitPreference", "clean_explicit_preference", "clean-explicit-preference"],
+    BOOKING_CLEAN_EXPLICIT_PREFERENCES,
+    "Clean/explicit preference",
+  );
+  const micNeeds = optionalString(body, ["micNeeds", "mic_needs", "mic-needs"], 300);
+  const mustPlaySongs = optionalString(body, ["mustPlaySongs", "must_play_songs", "must-play-songs"], 800);
+  const doNotPlaySongs = optionalString(body, ["doNotPlaySongs", "do_not_play_songs", "do-not-play-songs"], 800);
+  const announcementsNeeded = optionalString(body, ["announcementsNeeded", "announcements_needed", "announcements-needed"], 800);
+  const specialMoments = optionalString(body, ["specialMoments", "special_moments", "special-moments"], 800);
+  const loadInNotes = optionalString(body, ["loadInNotes", "load_in_notes", "load-in-notes"], 800);
+  const parkingNotes = optionalString(body, ["parkingNotes", "parking_notes", "parking-notes"], 800);
+  const hasEventPrepDetails = [
+    dayOfContactName,
+    dayOfContactPhone,
+    eventVibe,
+    crowdType,
+    cleanExplicitPreference,
+    micNeeds,
+    mustPlaySongs,
+    doNotPlaySongs,
+    announcementsNeeded,
+    specialMoments,
+    loadInNotes,
+    parkingNotes,
+  ].some(Boolean);
+  const eventPrepDetails = hasEventPrepDetails
+    ? composeEventPrepDetails({
+      day_of_contact_name: dayOfContactName,
+      day_of_contact_phone: dayOfContactPhone,
+      event_vibe: eventVibe,
+      crowd_type: crowdType,
+      clean_explicit_preference: cleanExplicitPreference,
+      mic_needs: micNeeds,
+      must_play_songs: mustPlaySongs,
+      do_not_play_songs: doNotPlaySongs,
+      announcements_needed: announcementsNeeded,
+      special_moments: specialMoments,
+      load_in_notes: loadInNotes,
+      parking_notes: parkingNotes,
+    })
+    : null;
+  const originalAdditionalNotes = optionalString(body, ["additionalNotes", "additional_notes", "additional-notes", "message"], 2000);
+  const additionalNotes = [
+    originalAdditionalNotes,
+    eventPrepDetails ? `Event Prep Details\n${eventPrepDetails}` : null,
+  ].filter(Boolean).join("\n\n");
   const location = optionalString(body, ["location"], 220) ?? [venueName, cityState].filter(Boolean).join(" / ");
   const details = {
     event_type: eventType,
@@ -909,6 +1003,7 @@ function bookingInquiryPayload(body: Payload) {
     budget_range: budgetRange,
     heard_about: heardAbout,
     additional_notes: additionalNotes,
+    event_prep_details: eventPrepDetails,
   };
 
   return {

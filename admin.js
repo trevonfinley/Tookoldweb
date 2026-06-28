@@ -22,6 +22,8 @@
     cancelled: [],
   });
   const PAYMENT_STATUS_OPTIONS = Object.freeze(["pending", "paid", "failed", "refunded"]);
+  const PREP_STORAGE_PREFIX = "project-neo:event-prep:";
+  const PREP_REQUIRED_SECTIONS = new Set(["Event Overview", "Client Contact", "Venue & Load-In", "Timeline", "Payment / Balance", "Contract", "Final Confirmation"]);
 
   const state = {
     session: null,
@@ -31,6 +33,7 @@
     errors: {},
     filters: {},
     selected: {},
+    prepCompletion: {},
     activeSection: "overview",
   };
 
@@ -39,6 +42,7 @@
     ["clients", "/admin/clients?limit=50"],
     ["events", "/admin/events?limit=75"],
     ["availability", "/admin/availability-blocks?limit=75"],
+    ["event-prep", "/admin/event-prep-checklists?limit=75"],
     ["invoices", "/admin/invoices?limit=50"],
     ["payments", "/admin/payments?limit=50"],
     ["venues", "/admin/venues?limit=50"],
@@ -487,7 +491,7 @@
       return auth.getLoginUrl(currentPage);
     }
     const currentPage = `${window.location.pathname.split("/").pop() || "admin-dashboard.html"}${window.location.search}`;
-    return `admin-login.html?returnTo=${encodeURIComponent(currentPage)}`;
+    return `/admin-login.html?returnTo=${encodeURIComponent(currentPage)}`;
   }
 
   async function signOutAndRedirect() {
@@ -608,6 +612,7 @@
     setupNavigation();
     setupRecordControls();
     setupAvailabilityForm();
+    setupEventPrepControls();
     setupPasskeyManagement();
 
     const signOutButton = document.querySelector("[data-admin-signout]");
@@ -680,6 +685,7 @@
     renderMetrics(state.summary);
     renderOverview(state.summary);
     Object.keys(sectionConfigs).forEach(renderRecordSection);
+    renderEventPrepChecklist();
     renderAvailabilitySchedule();
     showSection(state.activeSection);
   }
@@ -1064,6 +1070,16 @@
     });
   }
 
+  function setupEventPrepControls() {
+    const select = document.querySelector("[data-event-prep-select]");
+    if (!select) return;
+
+    select.addEventListener("change", () => {
+      state.selected["event-prep"] = select.value || null;
+      renderEventPrepChecklist();
+    });
+  }
+
   function showSection(section) {
     state.activeSection = section || "overview";
     document.querySelectorAll("[data-admin-section]").forEach((panel) => {
@@ -1103,6 +1119,529 @@
         });
       }
     });
+  }
+
+  function renderEventPrepChecklist() {
+    const root = document.querySelector("[data-event-prep-root]");
+    const select = document.querySelector("[data-event-prep-select]");
+    if (!root || !select) return;
+
+    const events = getPrepEligibleEvents();
+    syncEventPrepSelect(select, events);
+    root.textContent = "";
+
+    if (state.errors["event-prep"]) {
+      root.append(createPrepNotice("Checklist API Pending", "Protected Event Prep API routes are not available yet, so completion changes are stored locally for this admin browser until Stack Mason wires persistence."));
+    }
+
+    if (events.length === 0) {
+      root.append(createEmptyCard("No upcoming or confirmed events are ready for prep yet."));
+      return;
+    }
+
+    const selectedEvent = events.find((event) => event.id === state.selected["event-prep"]) || events[0];
+    state.selected["event-prep"] = selectedEvent.id;
+    select.value = selectedEvent.id;
+
+    const checklist = getPrepChecklistForEvent(selectedEvent);
+    const sections = buildPrepSections(selectedEvent, checklist);
+    const progress = calculatePrepProgress(selectedEvent, sections);
+
+    root.append(createPrepSummary(selectedEvent, progress));
+
+    const grid = document.createElement("div");
+    grid.className = "admin-prep-section-grid";
+    sections.forEach((section) => {
+      grid.append(createPrepSectionCard(selectedEvent, section));
+    });
+    root.append(grid);
+  }
+
+  function getPrepEligibleEvents() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return (state.records.events || [])
+      .filter((event) => {
+        const status = eventStatus(event);
+        const window = getAvailabilityWindow("event", event);
+        return status !== "cancelled" && status !== "completed" && (!window || window.end >= today);
+      })
+      .sort((a, b) => {
+        const aWindow = getAvailabilityWindow("event", a);
+        const bWindow = getAvailabilityWindow("event", b);
+        return Number(aWindow?.start || 0) - Number(bWindow?.start || 0);
+      });
+  }
+
+  function syncEventPrepSelect(select, events) {
+    const current = state.selected["event-prep"];
+    select.textContent = "";
+
+    if (events.length === 0) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "No upcoming events";
+      select.append(option);
+      select.disabled = true;
+      state.selected["event-prep"] = null;
+      return;
+    }
+
+    select.disabled = false;
+    events.forEach((event) => {
+      const option = document.createElement("option");
+      option.value = event.id;
+      option.textContent = [
+        event.title || "Untitled event",
+        formatDate(event.event_date),
+        event.venue_name || event.location,
+      ].filter(Boolean).join(" / ");
+      select.append(option);
+    });
+
+    if (!events.some((event) => event.id === current)) {
+      state.selected["event-prep"] = events[0].id;
+    }
+  }
+
+  function getPrepChecklistForEvent(event) {
+    return (state.records["event-prep"] || []).find((item) => {
+      return String(item.event_id || item.eventId || firstRelation(item.events)?.id || "") === String(event.id);
+    }) || null;
+  }
+
+  function buildPrepSections(event, checklist) {
+    const client = firstRelation(event.clients) || findRelatedClient(event);
+    const venue = firstRelation(event.venues) || findRelatedVenue(event);
+    const invoice = findRelatedInvoice(event);
+    const payment = findRelatedPayment(invoice);
+    const musicNotes = getPrepMusicNotes(checklist);
+    const timelineItems = getPrepTimelineItems(checklist);
+    const gearItems = getPrepGearItems(checklist);
+    const checklistItems = getPrepItems(checklist);
+    const conflicts = getAvailabilityConflicts("event", event);
+
+    return [
+      {
+        title: "Event Overview",
+        description: "Date, time, status, event type, and conflict context.",
+        rows: [
+          ["Event", event.title],
+          ["Type", event.event_type],
+          ["Date", formatDate(event.event_date)],
+          ["Time", formatTimeRange(event.start_time, event.end_time)],
+          ["Status", createBadge(eventStatus(event))],
+          ["Guests", event.guest_count ? formatNumber(event.guest_count) : ""],
+          ["Conflicts", createConflictList(conflicts)],
+        ],
+        items: [
+          prepItem("event-status", "Confirm event status is correct", Boolean(eventStatus(event) && eventStatus(event) !== "inquiry"), true),
+          prepItem("event-window", "Confirm event date and time", Boolean(event.event_date && event.start_time && event.end_time), true),
+          prepItem("event-conflicts", "Review conflict indicator", conflicts.length === 0, true),
+        ],
+      },
+      {
+        title: "Client Contact",
+        description: "Primary contact details for admin follow-up.",
+        empty: "No client contact details recorded.",
+        rows: [
+          ["Client", client?.full_name],
+          ["Email", client?.email],
+          ["Phone", client?.phone],
+          ["Preferred contact", formatStatus(client?.preferred_contact_method)],
+        ],
+        items: [
+          prepItem("client-contact", "Confirm primary contact", Boolean(client?.full_name && (client?.email || client?.phone)), true),
+          ...checklistItemsForSection(checklistItems, "Client"),
+        ],
+      },
+      {
+        title: "Venue & Load-In",
+        description: "Arrival, setup, parking, power, and venue access details.",
+        empty: "No venue or load-in details recorded.",
+        rows: [
+          ["Venue", event.venue_name || venue?.name],
+          ["Location", event.location || [venue?.address_line1, venue?.city, venue?.state].filter(Boolean).join(", ")],
+          ["Load-in", venue?.load_in_notes || event.load_in_notes],
+          ["Parking", venue?.parking_notes || event.parking_notes],
+          ["Power", venue?.power_notes],
+          ["Setup notes", event.setup_notes],
+        ],
+        items: [
+          prepItem("venue-address", "Verify venue address and room location", Boolean(event.venue_name || venue?.name || event.location), true),
+          prepItem("venue-load-in", "Confirm load-in and parking details", Boolean(venue?.load_in_notes || venue?.parking_notes || event.setup_notes), true),
+          ...checklistItemsForSection(checklistItems, "Venue"),
+        ],
+      },
+      {
+        title: "Timeline",
+        description: "Program flow, start/end times, transitions, and announcements.",
+        empty: "No timeline items recorded.",
+        rows: [
+          ["Timeline notes", event.timeline_notes],
+          ...timelineItems.map((item) => [item.time_label || "Timeline item", [item.title, item.description].filter(Boolean).join(" / ")]),
+        ],
+        items: [
+          prepItem("timeline-build", "Build event timeline", Boolean(event.timeline_notes || timelineItems.length > 0), true),
+          ...checklistItemsForSection(checklistItems, "Timeline"),
+        ],
+      },
+      {
+        title: "Music Preferences",
+        description: "Requested vibe, clean/explicit preference, and general music notes.",
+        empty: "No music preferences recorded.",
+        rows: [
+          ["Music notes", musicNotes.music_preference_summary || event.music_preferences],
+          ["Clean/explicit", formatStatus(musicNotes.clean_or_explicit_preference || checklist?.clean_or_explicit_preference)],
+          ["Crowd type", checklist?.crowd_type],
+          ["Event vibe", checklist?.event_vibe],
+        ],
+        items: [
+          prepItem("music-preferences", "Review music preferences", Boolean(musicNotes.music_preference_summary || event.music_preferences), false),
+          prepItem("music-clean", "Confirm clean or explicit preference", Boolean(musicNotes.clean_or_explicit_preference || checklist?.clean_or_explicit_preference), false),
+          ...checklistItemsForSection(checklistItems, "Music"),
+        ],
+      },
+      {
+        title: "Must-Play / Do-Not-Play",
+        description: "Song guardrails and special requests.",
+        empty: "No must-play or do-not-play songs recorded.",
+        rows: [
+          ["Must-play", musicNotes.must_play_notes],
+          ["Do-not-play", musicNotes.do_not_play_notes],
+          ["Special songs", musicNotes.special_songs_notes],
+        ],
+        items: [
+          prepItem("music-must-play", "Review must-play list", Boolean(musicNotes.must_play_notes), false),
+          prepItem("music-do-not-play", "Review do-not-play list", Boolean(musicNotes.do_not_play_notes), false),
+        ],
+      },
+      {
+        title: "Gear Loadout",
+        description: "Gear to pack, load, set up, and return.",
+        empty: "No gear/loadout checklist recorded.",
+        rows: gearItems.map((item) => [
+          item.gear_name || "Gear item",
+          [item.quantity ? `Qty ${item.quantity}` : "", formatStatus(item.status), item.notes].filter(Boolean).join(" / "),
+        ]),
+        items: [
+          prepItem("gear-list", "Prepare gear list", gearItems.length > 0, true),
+          ...gearItems.map((item, index) => prepItem(`gear-${item.id || index}`, item.gear_name || "Gear item", ["packed", "loaded", "set_up", "returned", "not_applicable"].includes(item.status), false)),
+          ...checklistItemsForSection(checklistItems, "Gear"),
+        ],
+      },
+      {
+        title: "Mic & Announcements",
+        description: "Microphone needs, announcement notes, and MC cues.",
+        empty: "No mic or announcement notes recorded.",
+        rows: [
+          ["Announcements", musicNotes.announcements_notes],
+          ["Setup notes", event.setup_notes],
+        ],
+        items: [
+          prepItem("announcements", "Review mic and announcements", Boolean(musicNotes.announcements_notes || event.setup_notes), false),
+        ],
+      },
+      {
+        title: "Payment / Balance",
+        description: "Admin readiness only. No card data or processor actions happen here.",
+        empty: "No invoice or payment record connected yet.",
+        rows: [
+          ["Invoice", invoice?.invoice_number],
+          ["Invoice status", invoice?.status ? createBadge(invoice.status) : ""],
+          ["Deposit", invoice ? `${formatMoney(invoice.deposit_paid_cents)} of ${formatMoney(invoice.deposit_cents)}` : ""],
+          ["Balance due", invoice?.balance_due_cents !== undefined ? formatMoney(invoice.balance_due_cents) : ""],
+          ["Latest payment", payment ? [formatMoney(payment.amount_cents), formatStatus(payment.status)].filter(Boolean).join(" / ") : ""],
+        ],
+        items: [
+          prepItem("payment-deposit", "Check deposit status", Boolean(invoice && Number(invoice.deposit_paid_cents || 0) >= Number(invoice.deposit_cents || 0)), true),
+          prepItem("payment-balance", "Review balance due", Boolean(invoice && Number(invoice.balance_due_cents || 0) <= 0), true),
+          ...checklistItemsForSection(checklistItems, "Payments"),
+        ],
+      },
+      {
+        title: "Contract",
+        description: "Contract readiness snapshot when records exist.",
+        empty: "No contract recorded.",
+        rows: [
+          ["Contract status", checklist?.contract_status_snapshot ? createBadge(checklist.contract_status_snapshot) : "No contract recorded"],
+        ],
+        items: [
+          prepItem("contract-status", "Check contract status", Boolean(checklist?.contract_status_snapshot && !["not_started", "needs_review"].includes(checklist.contract_status_snapshot)), true),
+          ...checklistItemsForSection(checklistItems, "Contract"),
+        ],
+      },
+      {
+        title: "Final Confirmation",
+        description: "Final admin readiness before event day.",
+        empty: "No final confirmation recorded.",
+        rows: [
+          ["Final confirmation", checklist?.final_confirmation_status ? createBadge(checklist.final_confirmation_status) : "Not started"],
+        ],
+        items: [
+          prepItem("final-confirmation", "Send or record final confirmation", ["confirmed", "completed", "not_applicable"].includes(checklist?.final_confirmation_status), true),
+          ...checklistItemsForSection(checklistItems, "Final Confirmation"),
+        ],
+      },
+      {
+        title: "Internal Notes",
+        description: "Private preparation notes for owner/admin only.",
+        empty: "No private prep notes recorded.",
+        rows: [
+          ["Internal prep notes", checklist?.internal_notes || event.internal_notes],
+          ["Event notes", event.notes],
+        ],
+        items: [
+          prepItem("internal-review", "Review private internal notes", Boolean(checklist?.internal_notes || event.internal_notes || event.notes), false),
+          ...checklistItemsForSection(checklistItems, "Internal Notes"),
+        ],
+      },
+    ];
+  }
+
+  function prepItem(key, title, defaultComplete = false, required = false) {
+    return { key, title, defaultComplete, required };
+  }
+
+  function checklistItemsForSection(items, section) {
+    return items
+      .filter((item) => item.section === section)
+      .map((item) => prepItem(`api-${item.id || item.title}`, item.title || "Checklist item", item.status === "completed" || item.completed_at, Boolean(item.is_required)));
+  }
+
+  function createPrepSummary(event, progress) {
+    const summary = document.createElement("article");
+    summary.className = "admin-panel admin-prep-summary";
+
+    const heading = document.createElement("div");
+    heading.className = "admin-prep-summary-main";
+    const text = document.createElement("div");
+    const title = document.createElement("h3");
+    title.textContent = event.title || "Untitled event";
+    const meta = document.createElement("p");
+    meta.textContent = [
+      formatDate(event.event_date),
+      formatTimeRange(event.start_time, event.end_time),
+      event.venue_name || event.location,
+    ].filter(Boolean).join(" / ") || "Event details pending";
+    text.append(title, meta);
+    heading.append(text, createBadge(progress.status));
+
+    const barWrap = document.createElement("div");
+    barWrap.className = "admin-prep-progress";
+    const bar = document.createElement("span");
+    bar.style.width = `${progress.percent}%`;
+    barWrap.append(bar);
+
+    const stats = document.createElement("div");
+    stats.className = "admin-prep-stats";
+    [
+      ["Progress", `${progress.percent}%`],
+      ["Completed", `${formatNumber(progress.completed)} of ${formatNumber(progress.total)}`],
+      ["Required left", formatNumber(progress.requiredRemaining)],
+    ].forEach(([label, value]) => {
+      const item = document.createElement("span");
+      const strong = document.createElement("strong");
+      strong.textContent = value;
+      item.append(document.createTextNode(label), strong);
+      stats.append(item);
+    });
+
+    summary.append(heading, barWrap, stats);
+    return summary;
+  }
+
+  function createPrepSectionCard(event, section) {
+    const card = document.createElement("article");
+    card.className = "admin-panel admin-prep-section";
+
+    const heading = document.createElement("div");
+    heading.className = "admin-panel-heading";
+    const headingText = document.createElement("div");
+    const title = document.createElement("h3");
+    title.textContent = section.title;
+    const description = document.createElement("p");
+    description.textContent = section.description;
+    headingText.append(title, description);
+    heading.append(headingText, createBadge(sectionStatus(event, section)));
+
+    const body = document.createElement("div");
+    body.className = "admin-prep-section-body";
+
+    const rows = section.rows.filter(([, value]) => hasPrepValue(value));
+    if (rows.length > 0) {
+      const dl = document.createElement("dl");
+      dl.className = "admin-details-list";
+      rows.forEach(([label, value]) => {
+        const row = document.createElement("div");
+        const dt = document.createElement("dt");
+        const dd = document.createElement("dd");
+        dt.textContent = label;
+        appendCellValue(dd, value);
+        row.append(dt, dd);
+        dl.append(row);
+      });
+      body.append(dl);
+    } else {
+      body.append(createInlineEmpty(section.empty || "No details recorded yet."));
+    }
+
+    const checklist = document.createElement("div");
+    checklist.className = "admin-prep-checklist";
+    section.items.forEach((item) => {
+      checklist.append(createPrepToggle(event, section, item));
+    });
+    body.append(checklist);
+
+    card.append(heading, body);
+    return card;
+  }
+
+  function createPrepToggle(event, section, item) {
+    const id = `prep-${event.id}-${normalizeStatus(section.title)}-${normalizeStatus(item.key)}`;
+    const label = document.createElement("label");
+    label.className = "admin-prep-check";
+    if (item.required) label.dataset.required = "true";
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.id = id;
+    input.checked = isPrepItemComplete(event, section, item);
+    input.addEventListener("change", () => {
+      setPrepItemComplete(event, section, item, input.checked);
+      renderEventPrepChecklist();
+    });
+
+    const text = document.createElement("span");
+    const title = document.createElement("strong");
+    title.textContent = item.title;
+    const meta = document.createElement("small");
+    meta.textContent = item.required ? "Required" : "Optional";
+    text.append(title, meta);
+    label.append(input, text);
+    return label;
+  }
+
+  function calculatePrepProgress(event, sections) {
+    const items = sections.flatMap((section) => section.items.map((item) => ({ section, item })));
+    const total = items.length;
+    const completed = items.filter(({ section, item }) => isPrepItemComplete(event, section, item)).length;
+    const requiredRemaining = items.filter(({ section, item }) => item.required && !isPrepItemComplete(event, section, item)).length;
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const status = requiredRemaining === 0 && total > 0
+      ? percent === 100 ? "completed" : "ready"
+      : completed > 0 ? "in_progress" : "not_started";
+    return { total, completed, requiredRemaining, percent, status };
+  }
+
+  function sectionStatus(event, section) {
+    const total = section.items.length;
+    const completed = section.items.filter((item) => isPrepItemComplete(event, section, item)).length;
+    if (total > 0 && completed === total) return "completed";
+    if (completed > 0) return "in_progress";
+    return PREP_REQUIRED_SECTIONS.has(section.title) ? "needs_review" : "not_started";
+  }
+
+  function isPrepItemComplete(event, section, item) {
+    const override = getPrepOverrides(event.id)[prepStorageKey(section, item)];
+    return override === undefined ? Boolean(item.defaultComplete) : Boolean(override);
+  }
+
+  function setPrepItemComplete(event, section, item, isComplete) {
+    const overrides = getPrepOverrides(event.id);
+    overrides[prepStorageKey(section, item)] = isComplete;
+    state.prepCompletion[event.id] = overrides;
+    try {
+      window.localStorage?.setItem(`${PREP_STORAGE_PREFIX}${event.id}`, JSON.stringify(overrides));
+    } catch {
+      setStatus("Checklist update kept for this session only.", "error");
+    }
+  }
+
+  function getPrepOverrides(eventId) {
+    if (state.prepCompletion[eventId]) return state.prepCompletion[eventId];
+    try {
+      state.prepCompletion[eventId] = JSON.parse(window.localStorage?.getItem(`${PREP_STORAGE_PREFIX}${eventId}`) || "{}") || {};
+    } catch {
+      state.prepCompletion[eventId] = {};
+    }
+    return state.prepCompletion[eventId];
+  }
+
+  function prepStorageKey(section, item) {
+    return `${normalizeStatus(section.title)}:${normalizeStatus(item.key || item.title)}`;
+  }
+
+  function hasPrepValue(value) {
+    if (value instanceof Node) return true;
+    if (Array.isArray(value)) return value.some(Boolean);
+    return value !== null && value !== undefined && value !== "";
+  }
+
+  function createInlineEmpty(message) {
+    const empty = document.createElement("p");
+    empty.className = "admin-inline-empty";
+    empty.textContent = message;
+    return empty;
+  }
+
+  function createPrepNotice(titleText, bodyText) {
+    const notice = document.createElement("article");
+    notice.className = "admin-panel admin-prep-notice";
+    const title = document.createElement("strong");
+    title.textContent = titleText;
+    const body = document.createElement("span");
+    body.textContent = bodyText;
+    notice.append(title, body);
+    return notice;
+  }
+
+  function findRelatedClient(event) {
+    const clientId = event.client_id || event.clientId;
+    if (!clientId) return null;
+    return (state.records.clients || []).find((client) => String(client.id) === String(clientId)) || null;
+  }
+
+  function findRelatedVenue(event) {
+    const venueId = event.venue_id || event.venueId;
+    if (!venueId) return null;
+    return (state.records.venues || []).find((venue) => String(venue.id) === String(venueId)) || null;
+  }
+
+  function findRelatedInvoice(event) {
+    return (state.records.invoices || []).find((invoice) => {
+      const invoiceEvent = firstRelation(invoice.events);
+      return String(invoice.event_id || invoiceEvent?.id || "") === String(event.id);
+    }) || null;
+  }
+
+  function findRelatedPayment(invoice) {
+    if (!invoice) return null;
+    return (state.records.payments || []).find((payment) => {
+      const paymentInvoice = firstRelation(payment.invoices);
+      return String(payment.invoice_id || paymentInvoice?.id || "") === String(invoice.id);
+    }) || null;
+  }
+
+  function getPrepItems(checklist) {
+    return asArray(checklist?.items || checklist?.event_prep_items || checklist?.checklist_items);
+  }
+
+  function getPrepGearItems(checklist) {
+    return asArray(checklist?.gear_items || checklist?.event_gear_items);
+  }
+
+  function getPrepTimelineItems(checklist) {
+    return asArray(checklist?.timeline_items || checklist?.event_timeline_items);
+  }
+
+  function getPrepMusicNotes(checklist) {
+    return firstRelation(checklist?.music_notes || checklist?.event_music_notes) || {};
+  }
+
+  function asArray(value) {
+    return Array.isArray(value) ? value : value ? [value] : [];
   }
 
   function renderRecordSection(key) {
@@ -1291,8 +1830,32 @@
 
   function createDetailActions(key, item) {
     if (key === "booking-inquiries") return createBookingReviewActions(item);
+    if (key === "events") return createEventPrepActions(item);
     if (key === "payments") return createPaymentStatusActions(item);
     return null;
+  }
+
+  function createEventPrepActions(item) {
+    const panel = document.createElement("div");
+    panel.className = "admin-action-panel";
+
+    const heading = document.createElement("h4");
+    heading.textContent = "Event Prep";
+    const help = document.createElement("p");
+    help.textContent = "Open the private prep checklist for venue, music, gear, payment, contract, and final confirmation review.";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn-secondary";
+    button.textContent = "Open Prep Checklist";
+    button.addEventListener("click", () => {
+      state.selected["event-prep"] = item.id;
+      renderEventPrepChecklist();
+      showSection("event-prep");
+      document.querySelector("[data-event-prep-root]")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    panel.append(heading, help, button);
+    return panel;
   }
 
   function createBookingReviewActions(item) {

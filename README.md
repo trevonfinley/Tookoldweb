@@ -181,6 +181,51 @@ If `npm` is not available on the shell PATH, the existing validator can still be
 node scripts/validate-deploy.mjs
 ```
 
+## Environment Strategy
+
+Project Neo uses this official release flow:
+
+```txt
+feature/* -> dev -> staging -> main
+```
+
+Branch roles:
+- `feature/*`: individual agent work branches created from `dev`.
+- `dev`: integration branch for active development and agent collaboration.
+- `staging`: pre-production release candidate branch.
+- `main`: production/live branch.
+
+Vercel mapping:
+- `main` maps to the Production Deployment.
+- `staging` maps to a staging Preview Deployment.
+- `dev` maps to a development/integration Preview Deployment.
+- `feature/*` branches map to temporary Preview Deployments.
+
+Supabase mapping:
+- `project-neo-dev` is recommended for local/dev and feature branch testing.
+- `project-neo-staging` is recommended for release candidate QA.
+- `project-neo-prod` is recommended for live production data.
+
+Production deploys should only come from `main`. Risky or untested work should never go directly to `main`, staging must be reviewed before production, and production secrets must not be used in development or staging. See `docs/environments.md` for branch setup commands, release gates, rollback flow, hotfix flow, and agent responsibilities.
+
+Launchpad operational references:
+
+- `docs/environments.md`: official dev/staging/production strategy, Vercel branch mapping, Supabase environment recommendations, and environment variable rules.
+- `docs/release-checklist.md`: feature, pre-staging, pre-production, production, and post-deployment checks.
+- `docs/rollback-plan.md`: Vercel rollback, Git revert, Edge Function rollback, database caution, and hotfix flow.
+
+Required release sequence:
+
+1. Agent creates `feature/agent-name-task-name` from `dev`.
+2. Agent completes scoped work and creates a handoff note.
+3. Work merges into `dev` for integration testing.
+4. `dev` promotes to `staging` for pre-production testing.
+5. Bug Hunter performs QA on staging.
+6. Shield performs security review on staging.
+7. Launchpad performs deployment review.
+8. Scribe updates changelog and version notes.
+9. `staging` promotes to `main` for production deployment.
+
 ## Validation
 
 Before deployment or handoff:
@@ -265,6 +310,7 @@ Phase 6: Operations scale
 - `docs/PROJECT_NEO_DATABASE_SCHEMA.md`: schema, statuses, relationships, RLS model, indexes, and seed data.
 - `docs/PROJECT_NEO_AUTH.md`: admin/client auth flow, roles, owner bootstrap, redirect URLs, OAuth setup, passkeys, and access assumptions.
 - `docs/PROJECT_NEO_DEPLOYMENT.md`: local setup, environment model, Supabase deployment, Vercel/Netlify setup, auth provider setup, launch checklist.
+- `docs/environments.md`: official dev, staging, and production strategy; branch mapping; Vercel/Supabase environment mapping; release gates; rollback and hotfix flow.
 - `docs/deployment-notes.md`: preview and production deployment records, deploy IDs, domain status, rollback notes, and launch follow-up.
 - `docs/PROJECT_NEO_LAUNCH_READINESS.md`: Neo Prime launch-readiness summary, launch blockers, launch gates, and handoff coverage.
 - `docs/PROJECT_NEO_QA_BUG_REPORT.md`: current QA findings and fix checklist.

@@ -12,6 +12,10 @@
 
 YYYY-MM-DD
 
+## Related Branch
+
+[Branch name such as `feature/...`, `dev`, `staging`, `main`, `hotfix/...`, or `Not applicable.`]
+
 ## Task Summary
 
 [Briefly describe what changed, why it changed, and whether the work is complete, partial, blocked, or deferred.]
@@ -31,6 +35,22 @@ YYYY-MM-DD
 ## Key Decisions Made
 
 - [Document important implementation, product, architecture, process, or documentation decisions.]
+
+## Architecture Changes
+
+- [Describe architecture, routing, folder structure, app strategy, or major technical decision changes, or `None.`]
+
+## Folder/File Structure Changes
+
+- [Describe folder/file structure changes, or `None.`]
+
+## New Conventions
+
+- [Describe new conventions introduced, or `None.`]
+
+## Affected Modules
+
+- [List affected modules or `None.`]
 
 ## Data/API/Schema Changes
 

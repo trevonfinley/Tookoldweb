@@ -38,6 +38,10 @@ The public site does not expose admin navigation, and admin/auth pages are marke
 
 Final Vercel protection decision recorded 2026-06-01: production stays publicly reachable for MVP launch, with no global Vercel Authentication or production Deployment Protection wall. Admin, auth, and client portal shells must not render private records until authenticated API authorization succeeds. Preview/staging deployments should stay behind Vercel Authentication or Deployment Protection where available. See `docs/decisions/2026-06-01-vercel-protection-decision.md`.
 
+Gatekeeper update 2026-06-08: logged-out admin dashboard redirects now use root-relative `/admin-login.html` login URLs so clean routes such as `/admin-dashboard`, `/admin-dashboard/`, and `/admin-dashboard.html` do not resolve the login page under a nested dashboard path. The admin dashboard still hides its private shell until `/admin/me` succeeds.
+
+Gatekeeper recheck 2026-06-13: local generated-preview browser checks reconfirmed that `/admin-dashboard`, `/admin-dashboard/`, and `/admin-dashboard.html` redirect to `/admin-login.html?returnTo=admin-dashboard.html` while logged out. The login shell renders without private admin tables, and the dashboard shell remains hidden until Supabase session lookup and `/admin/me` authorization succeed. No auth route, callback path, environment variable, role, or passkey behavior changed in this recheck.
+
 ## Production Owner Bootstrap Status
 
 Gatekeeper bootstrapped the first production owner identity on June 3, 2026:

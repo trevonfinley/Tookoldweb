@@ -20,6 +20,7 @@ Important notes:
 - Vercel preview commit: `8517bbb5b00ad4fc61c802d4ca29f09f3025a7d0`
 - Current production target: `https://tookoldweb.vercel.app`
 - Current production deploy ID for final booking/contact QA: `dpl_14DujRxbJBHLvyPrH9nHDVQfciUa`
+- Official release flow is documented as `feature/* -> dev -> staging -> main`.
 - Neo Prime may declare GO only after all critical launch blockers pass or receive explicit owner-approved deferrals.
 - `v1.0.0` is reserved for the official MVP launch.
 - Square integration remains deferred.
@@ -27,5 +28,6 @@ Important notes:
 
 Detailed notes:
 - `docs/versions/v0.8.0.md`
+- `docs/environments.md`
 - `docs/deployment-notes.md`
 - `docs/PROJECT_NEO_LAUNCH_READINESS.md`

@@ -30,19 +30,20 @@ Every handoff note must include:
 1. Agent Name
 2. Agent Role
 3. Date
-4. Task Summary
-5. Files Created
-6. Files Modified
-7. Files Deleted
-8. Key Decisions Made
-9. Data/API/Schema Changes
-10. Environment Variable Changes
-11. Security/Compliance Impact
-12. Agents That Need This Update
-13. Required Follow-Up Tasks
-14. Risks or Blockers
-15. Testing Performed
-16. Suggested Next Agent
+4. Related Branch
+5. Task Summary
+6. Files Created
+7. Files Modified
+8. Files Deleted
+9. Key Decisions Made
+10. Data/API/Schema Changes
+11. Environment Variable Changes
+12. Security/Compliance Impact
+13. Agents That Need This Update
+14. Required Follow-Up Tasks
+15. Risks or Blockers
+16. Testing Performed
+17. Suggested Next Agent
 
 Rules:
 - If backend/API behavior changes, notify Stack Mason, Booker, Mission Control, Data Knox, Shield, Bug Hunter, and Scribe as needed.
@@ -60,6 +61,59 @@ Rules:
 - Do not document fake work as completed.
 - Do not include secrets, tokens, API keys, passwords, or private credentials in handoff notes.
 - If a task is outside the current agent's role, leave a note instead of building it directly.
+
+## Environment Strategy: Dev, Staging, and Production
+
+Project Neo uses this release flow:
+
+```txt
+feature/* -> dev -> staging -> main
+```
+
+Branch rules:
+- `feature/*` branches are for individual agent work.
+- `dev` is the integration branch for active development and agent work.
+- `staging` is the pre-production testing branch.
+- `main` is the production/live branch.
+- Production deploys should only come from `main`.
+- Risky or untested work should never go directly to `main`.
+- Staging must be reviewed before production.
+
+Agent workflow rules:
+- Feature agents should branch from `dev` using names like `feature/booker-booking-copy` or `feature/stack-mason-api-validation`.
+- Feature work should merge into `dev` first.
+- `dev` should merge into `staging` only after build, basic QA, handoff, and changelog checks pass.
+- `staging` should merge into `main` only after Bug Hunter QA, Shield review, Launchpad deployment review, Scribe release notes, and Neo Prime release approval.
+- Agents must create handoff notes after meaningful work.
+- Bug Hunter must QA staging before production.
+- Shield must review security-sensitive changes before production.
+- Scribe must update changelog and version/release notes for releases.
+- Launchpad must document deployment and rollback notes.
+
+Environment and secret rules:
+- Vercel Production maps to `main`.
+- Vercel Preview maps to `staging`, `dev`, and `feature/*` branch deployments, with branch-scoped environment variables where available.
+- Supabase should use separate projects for development, staging, and production when available: `project-neo-dev`, `project-neo-staging`, and `project-neo-prod`.
+- Production secrets must not be used in dev or staging.
+- Staging must not use production secrets.
+- Development must not use production secrets.
+- No real secrets should be committed to the repo.
+- `.env.example` files must stay placeholder-only.
+- Service role keys, payment secrets, webhook secrets, OAuth secrets, and private provider credentials must remain server-side only.
+
+Release gates:
+- Before merging `dev` to `staging`: app builds successfully, basic QA passes, no obvious broken routes exist, no secrets are committed, handoff notes are complete, and `CHANGELOG.md` is updated under `[Unreleased]`.
+- Before merging `staging` to `main`: Bug Hunter QA is complete, Shield security review is complete, Launchpad deployment review is complete, Scribe release/version notes are updated, no critical bugs are open, no secrets are exposed, admin/private routes are reviewed, and public pages are tested on desktop and mobile.
+
+Rollback and hotfix rules:
+- Roll back production through Vercel by redeploying or promoting the last known good production deployment when needed.
+- Use `git revert` for bad commits instead of rewriting shared history.
+- Document rollbacks in `CHANGELOG.md`, `docs/deployment-notes.md`, and an agent handoff note.
+- Create `hotfix/*` branches from `main` for urgent production fixes.
+- Merge hotfixes back into `main`, then back-merge `main` into `staging` and `dev`.
+
+Detailed environment strategy:
+- `docs/environments.md`
 
 ## Architecture Handoff Requirements
 

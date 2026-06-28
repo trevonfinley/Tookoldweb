@@ -206,7 +206,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const checkErrors = {};
 
     availabilityChecker.querySelectorAll('[data-check-error-for]').forEach((error) => {
-      checkErrors[error.dataset.checkErrorFor] = error;
+      const key = error.dataset.checkErrorFor;
+      checkErrors[key] = error;
+      if (!error.id) error.id = `check-${key}-error`;
+    });
+
+    Object.entries(checkFields).forEach(([key, field]) => {
+      if (!field || !checkErrors[key]) return;
+      const describedBy = new Set((field.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean));
+      describedBy.add(checkErrors[key].id);
+      field.setAttribute('aria-describedby', Array.from(describedBy).join(' '));
     });
 
     if (checkFields.eventDate) checkFields.eventDate.min = todayInputValue();
@@ -241,19 +250,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const availabilityCopy = {
       available: {
         title: 'Appears available',
-        message: 'This date appears available. Submit your inquiry to start the booking process.'
+        message: 'This date appears available. Submit your inquiry so DJ Too Kold can review the full details.'
       },
       pending: {
         title: 'Pending review',
-        message: 'This date may have another request pending. Submit your inquiry and we will confirm availability.'
+        message: 'This date may already have a request in review. Submit your inquiry and DJ Too Kold will confirm what is possible.'
       },
       unavailable: {
         title: 'Currently unavailable',
-        message: 'This date is currently unavailable. You can still contact us about alternate times.'
+        message: 'This date is currently unavailable. You can still ask about alternate times or nearby dates.'
       },
       contact_required: {
         title: 'Manual review needed',
-        message: 'This date needs manual review. Submit your inquiry and we will follow up.'
+        message: 'This date needs manual review. Submit your inquiry and DJ Too Kold will follow up.'
       }
     };
 
@@ -308,25 +317,25 @@ document.addEventListener('DOMContentLoaded', () => {
       let ok = true;
 
       if (!readTrimmedValue(checkFields.eventDate)) {
-        setCheckError('eventDate', 'Please choose an event date.');
+        setCheckError('eventDate', 'Choose the event date to check availability.');
         ok = false;
       } else if (checkFields.eventDate && readTrimmedValue(checkFields.eventDate) < checkFields.eventDate.min) {
-        setCheckError('eventDate', 'Please choose today or a future date.');
+        setCheckError('eventDate', 'Choose today or a future date.');
         ok = false;
       }
 
       if (!readTrimmedValue(checkFields.eventType)) {
-        setCheckError('eventType', 'Please choose an event type.');
+        setCheckError('eventType', 'Choose the event type so the date can be reviewed properly.');
         ok = false;
       }
 
       if (!readTrimmedValue(checkFields.startTime)) {
-        setCheckError('startTime', 'Please add a start time.');
+        setCheckError('startTime', 'Add the event start time.');
         ok = false;
       }
 
       if (!readTrimmedValue(checkFields.endTime)) {
-        setCheckError('endTime', 'Please add an end time.');
+        setCheckError('endTime', 'Add the event end time.');
         ok = false;
       }
 
@@ -340,15 +349,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!validateChecker()) {
         renderAvailabilityResult({
           status: 'contact_required',
-          message: 'Add the required event details to check availability.'
+          message: 'Add the required event details to check whether the date appears available.'
         }, true, { allowContinue: false });
+        const firstInvalid = availabilityChecker.querySelector('[aria-invalid="true"]');
+        if (firstInvalid) firstInvalid.focus();
         return;
       }
 
       if (!apiBaseUrl) {
         renderAvailabilityResult({
           status: 'contact_required',
-          message: 'Availability checking is not connected right now. You can still send an inquiry.'
+          message: 'The availability checker is not connected right now. You can still send an inquiry for manual review.'
         }, true);
         return;
       }
@@ -381,7 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setBookingAvailabilitySnapshot(null);
         renderAvailabilityResult({
           status: 'contact_required',
-          message: 'Availability checking is unavailable right now. You can still send an inquiry.'
+          message: 'The availability checker is unavailable right now. You can still send an inquiry for manual review.'
         }, true);
       } finally {
         setCheckerLoading(false);
@@ -445,6 +456,18 @@ document.addEventListener('DOMContentLoaded', () => {
           cityState: getField('#city-state'),
           guestCount: getField('#guest-count'),
           indoorOutdoor: getField('#indoor-outdoor'),
+          dayOfContactName: getField('#day-of-contact-name'),
+          dayOfContactPhone: getField('#day-of-contact-phone'),
+          eventVibe: getField('#event-vibe'),
+          crowdType: getField('#crowd-type'),
+          cleanExplicitPreference: getField('#clean-explicit-preference'),
+          micNeeds: getField('#mic-needs'),
+          mustPlaySongs: getField('#must-play-songs'),
+          doNotPlaySongs: getField('#do-not-play-songs'),
+          announcementsNeeded: getField('#announcements-needed'),
+          specialMoments: getField('#special-moments'),
+          loadInNotes: getField('#load-in-notes'),
+          parkingNotes: getField('#parking-notes'),
           musicPreferences: getField('#music-preferences'),
           budgetRange: getField('#budget-range'),
           heardAbout: getField('#heard-about'),
@@ -462,10 +485,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorTargets = {};
     const fieldByError = {};
     form.querySelectorAll('[data-error-for]').forEach((error) => {
-      errorTargets[error.dataset.errorFor] = error;
+      const key = error.dataset.errorFor;
+      errorTargets[key] = error;
+      if (!error.id) error.id = `${form.id || 'form'}-${key}-error`;
     });
     Object.entries(fields).forEach(([key, field]) => {
       if (field) fieldByError[key] = field;
+      if (!field || !errorTargets[key]) return;
+      const describedBy = new Set((field.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean));
+      describedBy.add(errorTargets[key].id);
+      field.setAttribute('aria-describedby', Array.from(describedBy).join(' '));
     });
 
     const valueOf = (field) => (field && field.value ? field.value.trim() : '');
@@ -504,6 +533,30 @@ document.addEventListener('DOMContentLoaded', () => {
       both: 'Both',
       not_sure: 'Not sure yet'
     })[value] || value;
+    const cleanExplicitLabel = (value) => ({
+      clean_only: 'Clean music only',
+      clean_preferred: 'Clean preferred',
+      explicit_allowed: 'Explicit allowed',
+      client_discretion: "Let's discuss",
+      not_specified: 'Not sure yet'
+    })[value] || value;
+    const prepDetailEntries = () => [
+      ['Day-of contact name', valueOf(fields.dayOfContactName)],
+      ['Day-of contact phone', valueOf(fields.dayOfContactPhone)],
+      ['Event vibe', valueOf(fields.eventVibe)],
+      ['Crowd type', valueOf(fields.crowdType)],
+      ['Clean/explicit preference', cleanExplicitLabel(valueOf(fields.cleanExplicitPreference))],
+      ['Mic needs', valueOf(fields.micNeeds)],
+      ['Must-play songs', valueOf(fields.mustPlaySongs)],
+      ['Do-not-play songs', valueOf(fields.doNotPlaySongs)],
+      ['Announcements needed', valueOf(fields.announcementsNeeded)],
+      ['Special moments', valueOf(fields.specialMoments)],
+      ['Load-in notes', valueOf(fields.loadInNotes)],
+      ['Parking notes', valueOf(fields.parkingNotes)]
+    ];
+    const hasPrepDetails = () => prepDetailEntries().some(([, value]) => value);
+    const prepDetailLines = () => prepDetailEntries().map(([label, value]) => bookingLine(label, value));
+    const prepDetailsSummary = () => (hasPrepDetails() ? prepDetailLines().join('\n') : '');
 
     const bookingPayload = () => ({
       clientName: valueOf(fields.clientName),
@@ -519,6 +572,19 @@ document.addEventListener('DOMContentLoaded', () => {
       cityState: valueOf(fields.cityState),
       guestCount: Number.parseInt(valueOf(fields.guestCount), 10),
       indoorOutdoor: valueOf(fields.indoorOutdoor),
+      dayOfContactName: valueOf(fields.dayOfContactName),
+      dayOfContactPhone: valueOf(fields.dayOfContactPhone),
+      eventVibe: valueOf(fields.eventVibe),
+      crowdType: valueOf(fields.crowdType),
+      cleanExplicitPreference: valueOf(fields.cleanExplicitPreference),
+      micNeeds: valueOf(fields.micNeeds),
+      mustPlaySongs: valueOf(fields.mustPlaySongs),
+      doNotPlaySongs: valueOf(fields.doNotPlaySongs),
+      announcementsNeeded: valueOf(fields.announcementsNeeded),
+      specialMoments: valueOf(fields.specialMoments),
+      loadInNotes: valueOf(fields.loadInNotes),
+      parkingNotes: valueOf(fields.parkingNotes),
+      event_prep_details: prepDetailsSummary(),
       musicPreferences: valueOf(fields.musicPreferences),
       budgetRange: valueOf(fields.budgetRange),
       heardAbout: valueOf(fields.heardAbout),
@@ -553,6 +619,7 @@ document.addEventListener('DOMContentLoaded', () => {
             bookingLine('City/state', valueOf(fields.cityState)),
             bookingLine('Estimated guests', valueOf(fields.guestCount)),
             bookingLine('Indoor/outdoor', indoorOutdoorLabel(valueOf(fields.indoorOutdoor))),
+            ...(hasPrepDetails() ? ['', 'Event Prep Details', ...prepDetailLines(), ''] : []),
             bookingLine('Music preferences', valueOf(fields.musicPreferences)),
             bookingLine('Budget range', valueOf(fields.budgetRange)),
             bookingLine('Heard about', valueOf(fields.heardAbout)),
@@ -593,11 +660,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const validateEmail = () => {
       const emailVal = valueOf(fields.email);
       if (!emailVal) {
-        setError('email', 'Please enter your email.');
+        setError('email', 'Enter the best email for follow-up.');
         return false;
       }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
-        setError('email', 'Please enter a valid email.');
+        setError('email', 'Enter a valid email address.');
         return false;
       }
       return true;
@@ -608,33 +675,39 @@ document.addEventListener('DOMContentLoaded', () => {
       let ok = validateEmail();
 
       if (isBookingForm) {
-        ok = requireField('clientName', 'Please enter the client name.') && ok;
-        ok = requireField('eventType', 'Please choose an event type.') && ok;
-        ok = requireField('eventDate', 'Please choose an event date.') && ok;
-        ok = requireField('cityState', 'Please enter the event city and state.') && ok;
-        ok = requireField('guestCount', 'Please enter an estimated guest count.') && ok;
+        ok = requireField('clientName', 'Enter the client name.') && ok;
+        ok = requireField('eventType', 'Choose the event type.') && ok;
+        ok = requireField('eventDate', 'Choose the event date.') && ok;
+        ok = requireField('cityState', 'Enter the event city and state.') && ok;
+        ok = requireField('guestCount', 'Enter an estimated guest count.') && ok;
 
         const phoneVal = valueOf(fields.phone).replace(/\D/g, '');
         if (phoneVal && phoneVal.length < 7) {
-          setError('phone', 'Please enter a valid phone number.');
+          setError('phone', 'Enter a valid phone number or leave this optional field blank.');
+          ok = false;
+        }
+
+        const dayOfPhoneVal = valueOf(fields.dayOfContactPhone).replace(/\D/g, '');
+        if (dayOfPhoneVal && dayOfPhoneVal.length < 7) {
+          setError('dayOfContactPhone', 'Enter a valid day-of contact phone or leave this optional field blank.');
           ok = false;
         }
 
         const eventDate = valueOf(fields.eventDate);
         if (eventDate && fields.eventDate && eventDate < fields.eventDate.min) {
-          setError('eventDate', 'Please choose today or a future date.');
+          setError('eventDate', 'Choose today or a future date.');
           ok = false;
         }
 
         const guestCount = valueOf(fields.guestCount);
         if (guestCount && (!/^\d+$/.test(guestCount) || Number.parseInt(guestCount, 10) <= 0)) {
-          setError('guestCount', 'Please enter a positive whole number.');
+          setError('guestCount', 'Enter a positive whole number.');
           ok = false;
         }
 
       } else {
-        ok = requireField('name', 'Please enter your name.') && ok;
-        ok = requireField('message', 'Please enter a message.') && ok;
+        ok = requireField('name', 'Enter your name.') && ok;
+        ok = requireField('message', 'Enter a message.') && ok;
       }
 
       return ok;
@@ -644,13 +717,15 @@ document.addEventListener('DOMContentLoaded', () => {
       event.preventDefault();
 
       if (!validate()) {
-        setStatus('Please fix the errors above.', 'error');
+        setStatus('Fix the highlighted fields, then send the request.', 'error');
+        const firstInvalid = form.querySelector('[aria-invalid="true"]');
+        if (firstInvalid) firstInvalid.focus();
         return;
       }
 
       const endpoint = form.dataset.endpoint || defaultEndpoint;
       if (!endpoint) {
-        setStatus(`Online sending is not connected right now. Please use the Email directly link below to send this ${isBookingForm ? 'booking request' : 'message'}.`, 'error');
+        setStatus(`Online sending is not connected right now. Use the Email directly link below to send this ${isBookingForm ? 'booking request' : 'message'}.`, 'error');
         if (mailtoLink) mailtoLink.focus({ preventScroll: true });
         return;
       }
@@ -673,7 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setStatus(
           isBookingForm
             ? 'Thanks. Your booking request has been sent. DJ Too Kold will review the details and follow up soon.'
-            : 'Thanks. I will be in touch soon.',
+            : 'Thanks. Your message has been sent. DJ Too Kold will follow up soon.',
           'success'
         );
         form.reset();
@@ -683,7 +758,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setMailtoHref();
       } catch (err) {
         console.error(err);
-        setStatus('Sorry, something went wrong. Try email instead.', 'error');
+        setStatus('Something went wrong. Use the Email directly link so the details still get through.', 'error');
       } finally {
         if (submitButton) submitButton.disabled = false;
       }

@@ -172,20 +172,26 @@ async function copyDirectory(source, destination) {
   const entries = await readdir(source, { withFileTypes: true });
 
   await Promise.all(
-    entries.map(async (entry) => {
-      const sourcePath = path.join(source, entry.name);
-      const destinationPath = path.join(destination, entry.name);
+    entries
+      .filter((entry) => !isDotfile(entry.name))
+      .map(async (entry) => {
+        const sourcePath = path.join(source, entry.name);
+        const destinationPath = path.join(destination, entry.name);
 
-      if (entry.isDirectory()) {
-        await copyDirectory(sourcePath, destinationPath);
-        return;
-      }
+        if (entry.isDirectory()) {
+          await copyDirectory(sourcePath, destinationPath);
+          return;
+        }
 
-      if (entry.isFile()) {
-        await copyFile(sourcePath, destinationPath);
-      }
-    }),
+        if (entry.isFile()) {
+          await copyFile(sourcePath, destinationPath);
+        }
+      }),
   );
+}
+
+function isDotfile(fileName) {
+  return fileName.startsWith(".");
 }
 
 function renderBrowserConfig(config) {

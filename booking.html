@@ -12,7 +12,7 @@
   <a class="skip-link" href="#main-content">Skip to main content</a>
   <header class="site-header">
     <a class="brand" href="index.html" aria-label="DJ Too Kold home">
-      <span class="brand-mark" aria-hidden="true"><img src="assets/images/dj-too-kold-logo.jpeg" alt="" width="48" height="48"></span>
+      <span class="brand-mark"><img src="assets/images/dj-too-kold-logo.jpeg" alt="DJ Too Kold logo" width="48" height="48"></span>
       <span>DJ Too Kold</span>
     </a>
     <button class="menu-toggle" type="button" aria-label="Open menu" aria-controls="site-nav" aria-expanded="false">
@@ -36,14 +36,14 @@
     <section class="page-hero" data-reveal>
       <p class="eyebrow">Birmingham DJ booking inquiry</p>
       <h1>Start with the details that shape the night.</h1>
-      <p>Use this form to request availability for Birmingham, Central Alabama, or nearby events. Include the date, city, venue, event type, guest count, and anything the music absolutely needs to do.</p>
+      <p>Use this form to request availability for Birmingham, Central Alabama, or nearby events. Share the date, city, venue, event type, guest count, and what the music needs to make happen.</p>
     </section>
 
     <section class="section-inner availability-checker" data-reveal aria-labelledby="availability-check-title">
       <div>
         <p class="eyebrow">Availability checker</p>
-        <h2 id="availability-check-title">Check the event window first.</h2>
-        <p>Get a quick public estimate before sending the full inquiry. Availability is not guaranteed until DJ Too Kold approves the booking and the deposit and contract steps are complete.</p>
+        <h2 id="availability-check-title">Check whether the date appears available.</h2>
+        <p>Get a quick public estimate before sending the full inquiry. A date is not confirmed until DJ Too Kold approves the booking and any required agreement and deposit steps are complete.</p>
       </div>
 
       <form class="availability-check-form" data-availability-checker novalidate>
@@ -80,7 +80,7 @@
           <div class="form-group">
             <label for="check-end-time">End time <span aria-hidden="true">*</span></label>
             <input id="check-end-time" name="end-time" type="time" required>
-            <span class="field-hint">Overnight events are allowed. If the event ends after midnight, choose the morning end time.</span>
+            <span class="field-hint">For events ending after midnight, choose the morning end time.</span>
             <small class="error" data-check-error-for="endTime"></small>
           </div>
         </div>
@@ -127,7 +127,7 @@
           <label>Do not fill this out if you are human: <input name="bot-field"></label>
         </p>
 
-        <p class="form-intro">Share the essentials. Required fields are marked with <span aria-hidden="true">*</span>.</p>
+        <p class="form-intro">Share the essentials so the date, setup, and music fit can be reviewed. Required fields are marked with <span aria-hidden="true">*</span>.</p>
 
         <fieldset class="form-section">
           <legend>Your Info</legend>
@@ -146,7 +146,7 @@
             <div class="form-group">
               <label for="phone">Phone</label>
               <input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel">
-              <span class="field-hint">Optional, but helpful for quick follow-up.</span>
+              <span class="field-hint">Optional, but helpful if a quick detail needs to be confirmed.</span>
               <small class="error" data-error-for="phone"></small>
             </div>
           </div>
@@ -186,7 +186,7 @@
             <div class="form-group">
               <label for="end-time">End time</label>
               <input id="end-time" name="end-time" type="time">
-              <span class="field-hint">Overnight events are allowed. Use the morning end time for events that finish the next day.</span>
+              <span class="field-hint">For events ending after midnight, use the morning end time.</span>
               <small class="error" data-error-for="endTime"></small>
             </div>
           </div>
@@ -231,6 +231,98 @@
           </div>
         </fieldset>
 
+        <details class="form-section prep-details">
+          <summary>Optional event prep details</summary>
+          <p class="field-hint">Add what you know now. These details help with load-in, timeline, music, gear, and day-of contact prep.</p>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="day-of-contact-name">Day-of contact name</label>
+              <input id="day-of-contact-name" name="day-of-contact-name" type="text" autocomplete="name">
+            </div>
+            <div class="form-group">
+              <label for="day-of-contact-phone">Day-of contact phone</label>
+              <input id="day-of-contact-phone" name="day-of-contact-phone" type="tel" autocomplete="tel" inputmode="tel">
+              <span class="field-hint">Use this only if someone else should be reached on event day.</span>
+              <small class="error" data-error-for="dayOfContactPhone"></small>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="event-vibe">Event vibe</label>
+              <select id="event-vibe" name="event-vibe">
+                <option value="">Select one</option>
+                <option>Elegant &amp; Smooth</option>
+                <option>R&amp;B Lounge</option>
+                <option>Family Cookout Energy</option>
+                <option>Southern Hip-Hop Heavy</option>
+                <option>Millennial Throwbacks</option>
+                <option>High School Prom Turn-Up</option>
+                <option>Corporate Clean</option>
+                <option>Club/Nightlife</option>
+                <option>Wedding Reception Party</option>
+                <option>House / Dance Energy</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="crowd-type">Crowd type</label>
+              <input id="crowd-type" name="crowd-type" type="text" placeholder="Families, teens, college crowd, mixed ages, corporate guests">
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="clean-explicit-preference">Clean or explicit preference</label>
+              <select id="clean-explicit-preference" name="clean-explicit-preference">
+                <option value="">Select one</option>
+                <option value="clean_only">Clean music only</option>
+                <option value="clean_preferred">Clean preferred</option>
+                <option value="explicit_allowed">Explicit allowed</option>
+                <option value="client_discretion">Let's discuss</option>
+                <option value="not_specified">Not sure yet</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="mic-needs">Mic needs</label>
+              <input id="mic-needs" name="mic-needs" type="text" placeholder="No mic, one wireless mic, speeches, ceremony audio">
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="must-play-songs">Must-play songs</label>
+              <textarea id="must-play-songs" name="must-play-songs" rows="3" placeholder="Songs or artists that need to be included."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="do-not-play-songs">Do-not-play songs</label>
+              <textarea id="do-not-play-songs" name="do-not-play-songs" rows="3" placeholder="Songs, genres, or artists to avoid."></textarea>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="announcements-needed">Announcements needed</label>
+              <textarea id="announcements-needed" name="announcements-needed" rows="3" placeholder="Introductions, sponsor mentions, formal announcements, or none."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="special-moments">Special moments</label>
+              <textarea id="special-moments" name="special-moments" rows="3" placeholder="First dance, awards, senior walk, birthday moment, bouquet toss, etc."></textarea>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="load-in-notes">Load-in notes</label>
+              <textarea id="load-in-notes" name="load-in-notes" rows="3" placeholder="Loading area, stairs, elevator, setup room, power access, or venue rules."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="parking-notes">Parking notes</label>
+              <textarea id="parking-notes" name="parking-notes" rows="3" placeholder="Reserved parking, gate code, loading dock, valet, or street parking details."></textarea>
+            </div>
+          </div>
+        </details>
+
         <fieldset class="form-section">
           <legend>Music And Budget</legend>
           <div class="form-grid">
@@ -263,13 +355,13 @@
           </div>
 
           <div class="form-group">
-            <label for="music-preferences">Music preferences</label>
-            <textarea id="music-preferences" name="music-preferences" rows="4" placeholder="Genres, clean edits, must-play songs, do-not-play songs, announcements, or crowd style."></textarea>
+            <label for="music-preferences">Music direction</label>
+            <textarea id="music-preferences" name="music-preferences" rows="4" placeholder="Genres, clean edits, must-play songs, do-not-play songs, announcements, or the crowd style you want."></textarea>
           </div>
 
           <div class="form-group">
             <label for="additional-notes">Additional notes</label>
-            <textarea id="additional-notes" name="additional-notes" rows="4" placeholder="Timeline, load-in details, special moments, equipment needs, or anything else helpful."></textarea>
+            <textarea id="additional-notes" name="additional-notes" rows="4" placeholder="Timeline, load-in details, special moments, equipment needs, venue rules, or anything else helpful."></textarea>
           </div>
         </fieldset>
 
@@ -283,7 +375,7 @@
       <div class="section-inner booking-reminders" data-reveal>
         <div>
           <p class="eyebrow">Helpful details</p>
-          <h2>Share what you know. The rest can be shaped together.</h2>
+          <h2>Share what you know. The rest can be shaped with you.</h2>
         </div>
         <div class="mini-grid">
           <p>Venue access and parking</p>
@@ -301,7 +393,7 @@
     <div class="footer-inner">
       <div>
         <a class="brand footer-brand" href="index.html" aria-label="DJ Too Kold home">
-          <span class="brand-mark" aria-hidden="true"><img src="assets/images/dj-too-kold-logo.jpeg" alt="" width="48" height="48"></span>
+          <span class="brand-mark"><img src="assets/images/dj-too-kold-logo.jpeg" alt="DJ Too Kold logo" width="48" height="48"></span>
           <span>DJ Too Kold</span>
         </a>
         <p>Premium DJ entertainment for weddings, parties, nightlife, schools, corporate events, and social celebrations.</p>
